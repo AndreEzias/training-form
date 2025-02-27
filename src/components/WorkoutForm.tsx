@@ -44,6 +44,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
 
     // Funções relacionadas ao gerenciamento de dias
     const addDay = () => {
+        if (!selectedDay) {
+            alert("Por favor, escolha um dia.");
+            return;
+        }
         setDays([...days, {id: Date.now(), name: selectedDay, workouts: []}]);
     };
 
@@ -89,6 +93,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
 
     // Funções de PDF
     const printPDF = () => {
+        if (days.length === 0) {
+            alert("Por favor, adicione pelo menos um dia.");
+            return;
+        }
+
         const doc = new jsPDF('landscape');
 
         days.forEach((day, dayIndex) => {
@@ -157,7 +166,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
         setShowModal(false); // Fecha o modal após salvar
     };
 
-    const openSaveModal = () => setShowModal(true);
+    const openSaveModal = () => {
+        if (days.length === 0) {
+            alert("Por favor, adicione pelo menos um dia.");
+            return;
+        }
+        setShowModal(true);
+    };
+
     const closeSaveModal = () => setShowModal(false);
 
     return (
