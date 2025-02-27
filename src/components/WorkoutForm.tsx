@@ -29,11 +29,11 @@ interface WorkoutFormProps {
     workoutData?: any
 }
 
-const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
+const WorkoutForm: React.FC<WorkoutFormProps> = ({workoutNameProp, workoutData }) => {
     const [days, setDays] = useState<Day[]>([]);
     const [selectedDay, setSelectedDay] = useState<string>('');
     const [showModal, setShowModal] = useState(false);
-    const [workoutName, setWorkoutName] = useState<string>('');
+    const [workoutName, setWorkoutName] = useState<string>(workoutNameProp);
 
 
     useEffect(() => {
@@ -162,11 +162,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
             return;
         }
 
-        // Verifica se já existe uma ficha com o mesmo nome
         const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '{}');
-        if (savedWorkouts[workoutName]) {
-            alert("Já existe uma ficha com esse nome. Escolha outro nome.");
-            return;
+        if (savedWorkouts[workoutName] && workoutData?.name !== workoutName) {
+            const overwrite = confirm("Já existe uma ficha com esse nome. Deseja sobrescrever?");
+            if (!overwrite) {
+                return;
+            }
         }
 
         // Adiciona a ficha no localStorage
