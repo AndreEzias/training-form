@@ -17,6 +17,7 @@ interface Workout {
 interface Day {
     id: number;
     name: string;
+    label: string; // Add label field
     workouts: Workout[];
 }
 
@@ -48,7 +49,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
             alert("Por favor, escolha um dia.");
             return;
         }
-        setDays([...days, {id: Date.now(), name: selectedDay, workouts: []}]);
+        setDays([...days, {id: Date.now(), name: selectedDay, label: '', workouts: []}]);
     };
 
     const removeDay = (dayId: number) => {
@@ -91,6 +92,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
         ));
     };
 
+    const handleDayLabelChange = (dayId: number, value: string) => {
+        setDays(days.map(day =>
+            day.id === dayId ? {...day, label: value} : day
+        ));
+    };
+
     // Funções de PDF
     const printPDF = () => {
         if (days.length === 0) {
@@ -107,6 +114,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
 
             doc.setFontSize(23);
             doc.text(`Dia: ${day.name}`, 10, 10);
+            if (day.label) {
+                doc.setFontSize(18);
+                doc.text(`Grupo: ${day.label}`, 10, 20);
+            }
 
             const tableData = day.workouts.map(workout => {
                 const serieText = workout.repeticaoExtra > 0
@@ -129,7 +140,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
             autoTable(doc, {
                 head: [['Aparelho', 'Série', 'Repetição', 'Pausa', 'Assistir']],
                 body: tableData,
-                startY: 20,
+                startY: day.label ? 30 : 20,
                 styles: {fontSize: 18},
                 didDrawCell: (data) => {
                     if (data.column.index === 4 && typeof data.cell.raw === 'object' && data?.cell?.raw?.link) {
@@ -200,7 +211,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
                 <Card key={day.id} className="mb-4">
                     <Card.Header>
                         <Stack direction="horizontal" gap={3}>
-                            <Card.Title>{day.name}</Card.Title>
+                            <Card.Title className="flex-grow-1">{day.name}</Card.Title>
+                            <FormControl
+                                className="w-50"
+                                placeholder="Label"
+                                value={day.label}
+                                onChange={(e) => handleDayLabelChange(day.id, e.target.value)}
+                            />
                             <Button size='sm' className='ms-auto' variant="success" onClick={() => addWorkout(day.id)}>Adicionar
                                 Treino</Button>
                             <div className="vr"/>
