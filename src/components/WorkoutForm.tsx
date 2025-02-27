@@ -30,7 +30,7 @@ interface WorkoutFormProps {
 
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
     const [days, setDays] = useState<Day[]>([]);
-    const [selectedDay, setSelectedDay] = useState<string>('Domingo');
+    const [selectedDay, setSelectedDay] = useState<string>('');
     const [showModal, setShowModal] = useState(false);
     const [workoutName, setWorkoutName] = useState<string>('');
 
@@ -166,6 +166,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
                 <InputGroup>
                     <InputGroup.Text>Dia da semana</InputGroup.Text>
                     <Form.Select value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)}>
+                        <option value="">Escolha um dia</option>
                         <option value="Domingo">Domingo</option>
                         <option value="Segunda-feira">Segunda-feira</option>
                         <option value="Terça-feira">Terça-feira</option>
