@@ -21,19 +21,21 @@ interface Day {
     workouts: Workout[];
 }
 
+interface CellWithLink {
+    content: string;
+    link: string;
+}
+
 interface WorkoutFormProps {
     workoutData?: Day[]; // Dados iniciais do treino, passado (opcionalmente) como props
+    workoutNameProp?: string | string[];
 }
 
-interface WorkoutFormProps {
-    workoutData?: any
-}
-
-const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
+const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp }) => {
     const [days, setDays] = useState<Day[]>([]);
     const [selectedDay, setSelectedDay] = useState<string>('');
     const [showModal, setShowModal] = useState(false);
-    const [workoutName, setWorkoutName] = useState<string>('');
+    const [workoutName, setWorkoutName] = useState<string>(typeof workoutNameProp === 'string' ? workoutNameProp : '');
 
 
     useEffect(() => {
@@ -139,9 +141,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
                 startY: 20,
                 styles: {fontSize: 18},
                 didDrawCell: (data) => {
-                    if (data.column.index === 4 && typeof data.cell.raw === 'object' && data?.cell?.raw?.link) {
+                    if (data.column.index === 4 && typeof data.cell.raw === 'object' && (data.cell.raw as CellWithLink).link) {
                         doc.setTextColor(0, 0, 255);
-                        doc.textWithLink('Vídeo', data.cell.x + 2, data.cell.y + 7, {url: data?.cell?.raw?.link});
+                        doc.textWithLink('Vídeo', data.cell.x + 2, data.cell.y + 7, {url: (data.cell.raw as CellWithLink).link});
                         doc.setTextColor(0, 0, 0);
                     }
                 }

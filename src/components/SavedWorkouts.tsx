@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Container, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { Button, Container, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { useRouter } from 'next/router';
 
 interface Day {
