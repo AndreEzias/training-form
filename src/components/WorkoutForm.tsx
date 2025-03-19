@@ -29,11 +29,11 @@ interface WorkoutFormProps {
     workoutData?: any
 }
 
-const WorkoutForm: React.FC<WorkoutFormProps> = ({workoutNameProp, workoutData }) => {
+const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData }) => {
     const [days, setDays] = useState<Day[]>([]);
     const [selectedDay, setSelectedDay] = useState<string>('');
     const [showModal, setShowModal] = useState(false);
-    const [workoutName, setWorkoutName] = useState<string>(workoutNameProp);
+    const [workoutName, setWorkoutName] = useState<string>('');
 
 
     useEffect(() => {
@@ -114,10 +114,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({workoutNameProp, workoutData }
 
             doc.setFontSize(23);
             doc.text(`Dia: ${day.name}`, 10, 10);
-            if (day.label) {
-                doc.setFontSize(18);
-                doc.text(`Grupo: ${day.label}`, 10, 20);
-            }
 
             const tableData = day.workouts.map(workout => {
                 const serieText = workout.repeticaoExtra > 0
@@ -140,7 +136,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({workoutNameProp, workoutData }
             autoTable(doc, {
                 head: [['Aparelho', 'Série', 'Repetição', 'Pausa', 'Assistir']],
                 body: tableData,
-                startY: day.label ? 30 : 20,
+                startY: 20,
                 styles: {fontSize: 18},
                 didDrawCell: (data) => {
                     if (data.column.index === 4 && typeof data.cell.raw === 'object' && data?.cell?.raw?.link) {
@@ -162,12 +158,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({workoutNameProp, workoutData }
             return;
         }
 
+        // Verifica se já existe uma ficha com o mesmo nome
         const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '{}');
-        if (savedWorkouts[workoutName] && workoutData?.name !== workoutName) {
-            const overwrite = confirm("Já existe uma ficha com esse nome. Deseja sobrescrever?");
-            if (!overwrite) {
-                return;
-            }
+        if (savedWorkouts[workoutName]) {
+            alert("Já existe uma ficha com esse nome. Escolha outro nome.");
+            return;
         }
 
         // Adiciona a ficha no localStorage
@@ -214,7 +209,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({workoutNameProp, workoutData }
                         <Stack direction="horizontal" gap={3}>
                             <Card.Title className="flex-grow-1">{day.name}</Card.Title>
                             <FormControl
-                                className="w-50"
+                                className="w-25"
                                 placeholder="Label"
                                 value={day.label}
                                 onChange={(e) => handleDayLabelChange(day.id, e.target.value)}
@@ -291,6 +286,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({workoutNameProp, workoutData }
                                     </div>
                                 ))}
                             </Row>
+                            {day.workouts.length > 0 && (
+                                <Button size='sm' variant="success" onClick={() => addWorkout(day.id)}>Adicionar Treino</Button>
+                            )}
                         </Form>
                     </Card.Body>
                 </Card>
