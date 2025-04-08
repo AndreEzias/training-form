@@ -189,11 +189,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
 
     return (
         <Container className="container mt-4">
-            <div className="row">
-                <div className='col-12 col-md-8'>
+            <div className="row sticky-top  bg-white p-2 shadow-sm">
+                <div className="col-12">
                     <InputGroup>
                         <InputGroup.Text className="d-none d-md-block">Dia da semana</InputGroup.Text>
-                        <Form.Select value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)}>
+                        <Form.Select
+                            className="form-select"
+                            value={selectedDay}
+                            onChange={(e) => setSelectedDay(e.target.value)}
+                        >
                             <option value="">Escolha um dia</option>
                             <option value="Domingo">Domingo</option>
                             <option value="Segunda-feira">Segunda-feira</option>
@@ -206,11 +210,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                         <Button variant="primary" onClick={addDay}>Adicionar Dia</Button>
                         <Button variant="success" onClick={openSaveModal}>
                             <span className="d-none d-md-block">Salvar</span>
-                            <i className="bi bi-save d-md-none"></i> {/* Ícone para mobile */}
+                            <i className="bi bi-save d-md-none"></i>
                         </Button>
                         <Button variant="secondary" onClick={printPDF}>
                             <span className="d-none d-md-block">Imprimir</span>
-                            <i className="bi bi-printer d-md-none"></i> {/* Ícone para mobile */}
+                            <i className="bi bi-printer d-md-none"></i>
                         </Button>
                     </InputGroup>
                 </div>
@@ -257,46 +261,46 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                                             </FloatingLabel>
                                         </Col>
                                         <Col md={4} sm={2} xs={12}>
-                                        <InputGroup>
-                                            <FloatingLabel label="Séries">
-                                                <Form.Control
-                                                    type="number"
-                                                    size='sm'
-                                                    placeholder="Séries"
-                                                    value={workout.serie}
-                                                    onChange={(e) => handleWorkoutChange(day.id, index, 'serie', e.target.value)}
-                                                />
-                                            </FloatingLabel>
-                                            <FloatingLabel label="Repetir">
-                                                <Form.Control
-                                                    type="number"
-                                                    size='sm'
-                                                    placeholder="Repetições"
-                                                    value={workout.repeticao}
-                                                    onChange={(e) => handleWorkoutChange(day.id, index, 'repeticao', e.target.value)}
-                                                />
-                                            </FloatingLabel>
-                                            <FloatingLabel label="+ Repete">
-                                                <Form.Control
-                                                    type="number"
-                                                    size='sm'
-                                                    placeholder="+ Repetições"
-                                                    value={workout.repeticaoExtra}
-                                                    onChange={(e) => handleWorkoutChange(day.id, index, 'repeticaoExtra', e.target.value)}
-                                                />
-                                            </FloatingLabel>
-                                            <FloatingLabel label="Pausa">
-                                                <Form.Control
-                                                    type="number"
-                                                    size='sm'
-                                                    placeholder="Pausa"
-                                                    value={workout.pausa}
-                                                    onChange={(e) => handleWorkoutChange(day.id, index, 'pausa', e.target.value)}
-                                                />
-                                            </FloatingLabel>
-                                        </InputGroup>
+                                            <InputGroup>
+                                                <FloatingLabel label="Séries">
+                                                    <Form.Control
+                                                        type="number"
+                                                        size='sm'
+                                                        placeholder="Séries"
+                                                        value={workout.serie}
+                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'serie', e.target.value)}
+                                                    />
+                                                </FloatingLabel>
+                                                <FloatingLabel label="Repetir">
+                                                    <Form.Control
+                                                        type="number"
+                                                        size='sm'
+                                                        placeholder="Repetições"
+                                                        value={workout.repeticao}
+                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'repeticao', e.target.value)}
+                                                    />
+                                                </FloatingLabel>
+                                                <FloatingLabel label="+ Repete">
+                                                    <Form.Control
+                                                        type="number"
+                                                        size='sm'
+                                                        placeholder="+ Repetições"
+                                                        value={workout.repeticaoExtra}
+                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'repeticaoExtra', e.target.value)}
+                                                    />
+                                                </FloatingLabel>
+                                                <FloatingLabel label="Pausa">
+                                                    <Form.Control
+                                                        type="number"
+                                                        size='sm'
+                                                        placeholder="Pausa"
+                                                        value={workout.pausa}
+                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'pausa', e.target.value)}
+                                                    />
+                                                </FloatingLabel>
+                                            </InputGroup>
                                         </Col>
-                                        
+
                                         <Col md={3} sm={2} xs={12} >
                                             <FloatingLabel label="Assistir">
                                                 <Form.Control
