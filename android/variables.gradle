@@ -13,4 +13,8 @@ ext {
     androidxJunitVersion = '1.2.1'
     androidxEspressoCoreVersion = '3.6.1'
     cordovaAndroidVersion = '10.1.1'
+    cdvSigningKeystore = 'my-release-key.keystore'
+    cdvSigningKeyAlias = 'meu-alias'
+    cdvSigningKeyPassword = 'minhasenha123'
+    cdvSigningStorePassword = 'minhasenha123'
 }

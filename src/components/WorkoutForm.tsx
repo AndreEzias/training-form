@@ -39,6 +39,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
     const [showModal, setShowModal] = useState(false);
     const [workoutName, setWorkoutName] = useState<string>(typeof workoutNameProp === 'string' ? workoutNameProp : '');
 
+    // Detecta se o dispositivo é Android
+    const isAndroid = typeof window !== "undefined" && window.navigator.userAgent.toLowerCase().includes('android');
 
     useEffect(() => {
         // Atualiza o estado (days) ao receber novos dados pela prop workoutData
@@ -155,6 +157,71 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         doc.save('workout.pdf');
     };
 
+    // Função para baixar o PDF no Android usando DownloadManager
+    const downloadPDF = () => {
+        if (days.length === 0) {
+            alert("Por favor, adicione pelo menos um dia.");
+            return;
+        }
+
+        const doc = new jsPDF('landscape');
+
+        days.forEach((day, dayIndex) => {
+            if (dayIndex > 0) {
+                doc.addPage();
+            }
+
+            doc.setFontSize(23);
+            doc.text(`Dia: ${day.name}`, 10, 10);
+
+            const tableData = day.workouts.map(workout => {
+                const serieText = workout.repeticaoExtra > 0
+                    ? `${workout.serie}x +${workout.repeticaoExtra}x`
+                    : `${workout.serie}x`;
+                const pausaText = `${workout.pausa} SEG`;
+                const assistirText = workout.assistir
+                    ? { content: '', link: workout.assistir }
+                    : '';
+
+                return [
+                    String(workout.aparelho),
+                    serieText,
+                    String(workout.repeticao),
+                    pausaText,
+                    assistirText
+                ];
+            });
+
+            autoTable(doc, {
+                head: [['Aparelho', 'Série', 'Repetição', 'Pausa', 'Assistir']],
+                body: tableData,
+                startY: 20,
+                styles: { fontSize: 18 },
+                didDrawCell: (data) => {
+                    if (data.column.index === 4 && typeof data.cell.raw === 'object' && (data.cell.raw as CellWithLink).link) {
+                        doc.setTextColor(0, 0, 255);
+                        doc.textWithLink('Vídeo', data.cell.x + 2, data.cell.y + 7, { url: (data.cell.raw as CellWithLink).link });
+                        doc.setTextColor(0, 0, 0);
+                    }
+                }
+            });
+        });
+
+        const pdfBlob = doc.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+        // Verifica se está rodando em um dispositivo Android
+        if (window.navigator.userAgent.toLowerCase().includes('android')) {
+            const anchor = document.createElement('a');
+            anchor.href = pdfUrl;
+            anchor.download = 'workout.pdf';
+            anchor.click();
+            URL.revokeObjectURL(pdfUrl);
+        } else {
+            alert("O DownloadManager é suportado apenas em dispositivos Android.");
+        }
+    };
+
     // Funções de salvar no localStorage
     const handleSave = () => {
         if (!workoutName) {
@@ -212,10 +279,18 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                             <span className="d-none d-md-block">Salvar</span>
                             <i className="bi bi-save d-md-none"></i>
                         </Button>
-                        <Button variant="secondary" onClick={printPDF}>
-                            <span className="d-none d-md-block">Imprimir</span>
-                            <i className="bi bi-printer d-md-none"></i>
-                        </Button>
+                        {!isAndroid && (
+                            <Button variant="secondary" onClick={printPDF}>
+                                <span className="d-none d-md-block">Imprimir</span>
+                                <i className="bi bi-printer d-md-none"></i>
+                            </Button>
+                        )}
+                        {isAndroid && (
+                            <Button variant="secondary" onClick={downloadPDF}>
+                                <span className="d-none d-md-block">Baixar PDF</span>
+                                <i className="bi bi-download d-md-none"></i>
+                            </Button>
+                        )}
                     </InputGroup>
                 </div>
             </div>
