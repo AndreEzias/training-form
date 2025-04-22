@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Day } from '@/types/workout.types';
+import { Day, CellWithLink } from '@/types/workout.types';
 
 export function buildPDF(days: Day[]) {
     const doc = new jsPDF('landscape');
