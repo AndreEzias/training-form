@@ -1,34 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import jsPDF from 'jspdf';
 import InputGroup from 'react-bootstrap/InputGroup';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { Button, Container, FloatingLabel, Form, FormControl, Row, Stack, Modal } from "react-bootstrap";
 import { Card, CloseButton } from "react-bootstrap";
 import { Col } from "react-bootstrap";
-import autoTable from 'jspdf-autotable';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
-
-interface Workout {
-    aparelho: string;
-    serie: number;
-    repeticao: number;
-    repeticaoExtra: number;
-    pausa: number;
-    assistir: string;
-}
-
-interface Day {
-    id: number;
-    name: string;
-    label: string; // Add label field
-    workouts: Workout[];
-}
-
-interface CellWithLink {
-    content: string;
-    link: string;
-}
+import { buildPDF, saveDocAndroid, saveWeb } from '@/services/GeneratePDF';
+import { Day, Workout } from '@/types/workout.types';
 
 interface WorkoutFormProps {
     workoutData?: Day[]; // Dados iniciais do treino, passado (opcionalmente) como props
@@ -116,50 +93,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
             return;
         }
 
-        const doc = new jsPDF('landscape');
+        const doc = buildPDF(days);
 
-        days.forEach((day, dayIndex) => {
-            if (dayIndex > 0) {
-                doc.addPage();
-            }
-
-            doc.setFontSize(23);
-            doc.text(`Dia: ${day.name}`, 10, 10);
-
-            const tableData = day.workouts.map(workout => {
-                const serieText = workout.repeticaoExtra > 0
-                    ? `${workout.serie}x +${workout.repeticaoExtra}x`
-                    : `${workout.serie}x`;
-                const pausaText = `${workout.pausa} SEG`;
-                const assistirText = workout.assistir
-                    ? { content: '', link: workout.assistir }
-                    : '';
-
-                return [
-                    String(workout.aparelho),
-                    serieText,
-                    String(workout.repeticao),
-                    pausaText,
-                    assistirText
-                ];
-            });
-
-            autoTable(doc, {
-                head: [['Aparelho', 'Série', 'Repetição', 'Pausa', 'Assistir']],
-                body: tableData,
-                startY: 20,
-                styles: { fontSize: 18 },
-                didDrawCell: (data) => {
-                    if (data.column.index === 4 && typeof data.cell.raw === 'object' && (data.cell.raw as CellWithLink).link) {
-                        doc.setTextColor(0, 0, 255);
-                        doc.textWithLink('Vídeo', data.cell.x + 2, data.cell.y + 7, { url: (data.cell.raw as CellWithLink).link });
-                        doc.setTextColor(0, 0, 0);
-                    }
-                }
-            });
-        });
-
-        doc.save('workout.pdf');
+        saveWeb(doc);
     };
 
     // Função para baixar o PDF no Android usando DownloadManager
@@ -169,34 +105,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
             return;
         }
 
-        // 1. Criar o PDF
-        const doc = new jsPDF();
-        doc.text("Conteúdo do PDF", 10, 10);
+        const doc = buildPDF(days);
 
-        // 2. Converter para Blob e depois para Base64
-        const pdfBlob = doc.output('blob');
-        const pdfBase64 = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = (reader.result as string).split(',')[1];
-                resolve(base64String);
-            };
-            reader.readAsDataURL(pdfBlob);
-        });
-
-        // 3. Salvar no dispositivo
-        const savedFile = await Filesystem.writeFile({
-            path: 'documento.pdf',
-            data: pdfBase64,
-            directory: Directory.Cache,
-            encoding: 'base64',
-        });
-
-        // 4. Compartilhar (abrir menu com opções de impressora)
-        await Share.share({
-            title: 'Imprimir PDF',
-            url: savedFile.uri,
-        });
+        saveDocAndroid(doc);
     };
 
     // Funções de salvar no localStorage
