@@ -73,3 +73,8 @@ else
   echo "📂 APK Release: $ANDROID_DIR/app/build/outputs/apk/release/app-release.apk"
   echo "🔐 Keystore usado: $KEYSTORE_PATH"
 fi
+
+
+
+
+

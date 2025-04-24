@@ -6,11 +6,12 @@ import { Day, CellWithLink } from '@/types/workout.types';
 export function buildPDF(days: Day[]) {
     const doc = new jsPDF('landscape');
 
-    days.forEach((day, dayIndex) => {
-        if (dayIndex > 0) {
-            doc.addPage();
-        }
+    doc.addPage();
 
+    doc.text("Treino criado por Glaucia Ezías", 250, 10, null, null, 'right');
+
+    days.forEach((day, dayIndex) => {
+    
         doc.setFontSize(23);
         doc.text(`Dia: ${day.name}`, 10, 10);
 
