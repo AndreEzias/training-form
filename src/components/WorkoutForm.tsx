@@ -6,8 +6,9 @@ import { Card, CloseButton } from "react-bootstrap";
 import { Col } from "react-bootstrap";
 import { buildPDF, saveDocAndroid, saveWeb } from '@/services/GeneratePDF';
 import { Day, Workout } from '@/types/workout.types';
-import CustomSwitch from './custom-switch/CustomSwitch';
 import ToggleField from './toggle-switch/ToggleField';
+import Select from 'react-select';
+
 interface WorkoutFormProps {
     workoutData?: Day[]; // Dados iniciais do treino, passado (opcionalmente) como props
     workoutNameProp?: string | string[];
@@ -15,10 +16,20 @@ interface WorkoutFormProps {
 
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp }) => {
     const [days, setDays] = useState<Day[]>([]);
-    const [selectedDay, setSelectedDay] = useState<string>('');
+    const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [workoutName, setWorkoutName] = useState<string>(typeof workoutNameProp === 'string' ? workoutNameProp : '');
     const [isAndroidDevice, setIsAndroidDevice] = useState(false);
+
+    const dayOptions = [
+        { value: "Domingo", label: "Domingo" },
+        { value: "Segunda-feira", label: "Segunda-feira" },
+        { value: "Terça-feira", label: "Terça-feira" },
+        { value: "Quarta-feira", label: "Quarta-feira" },
+        { value: "Quinta-feira", label: "Quinta-feira" },
+        { value: "Sexta-feira", label: "Sexta-feira" },
+        { value: "Sábado", label: "Sábado" },
+    ];
 
     useEffect(() => {
         const userAgent = window.navigator.userAgent.toLowerCase();
@@ -32,13 +43,26 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         }
     }, [workoutData]);
 
+    const handleDaysChange = (selectedOptions: any) => {
+        const values = selectedOptions.map((option: any) => option.value);
+        setSelectedDays(values);
+    };
+
     // Funções relacionadas ao gerenciamento de dias
     const addDay = () => {
-        if (!selectedDay) {
-            alert("Por favor, escolha um dia.");
+        if (selectedDays.length === 0) {
+            alert("Por favor, escolha pelo menos um dia.");
             return;
         }
-        setDays([...days, { id: Date.now(), name: selectedDay, label: '', workouts: [] }]);
+        const dayNames = selectedDays.join(', '); // Pega apenas o primeiro dia selecionado
+        const newDay = {
+            id: Date.now() + Math.random(), // Garante IDs únicos
+            name: dayNames,
+            label: '',
+            workouts: []
+        };
+        setDays([...days, newDay]);
+        setSelectedDays([]); // Limpa a seleção após adicionar
     };
 
     const removeDay = (dayId: number) => {
@@ -88,7 +112,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         ));
     };
 
-    // Funções de PDF
     const printPDF = () => {
         if (days.length === 0) {
             alert("Por favor, adicione pelo menos um dia.");
@@ -100,7 +123,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         saveWeb(doc);
     };
 
-    // Função para baixar o PDF no Android usando DownloadManager
     const downloadPDF = async () => {
         if (days.length === 0) {
             alert("Por favor, adicione pelo menos um dia.");
@@ -112,21 +134,25 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         saveDocAndroid(doc);
     };
 
-    // Funções de salvar no localStorage
     const handleSave = () => {
         if (!workoutName) {
             alert("Por favor, insira um nome para a ficha.");
             return;
         }
 
-        // Verifica se já existe uma ficha com o mesmo nome
         const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '{}');
+
+        // Verifica se já existe uma ficha com o mesmo nome
         if (savedWorkouts[workoutName]) {
-            alert("Já existe uma ficha com esse nome. Escolha outro nome.");
-            return;
+            const confirmOverwrite = window.confirm(
+                "Já existe uma ficha com esse nome. Deseja sobrescrevê-la?"
+            );
+            if (!confirmOverwrite) {
+                return;
+            }
         }
 
-        // Adiciona a ficha no localStorage
+        // Adiciona ou sobrescreve a ficha no localStorage
         savedWorkouts[workoutName] = days;
 
         localStorage.setItem('workouts', JSON.stringify(savedWorkouts));
@@ -149,22 +175,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
             <div className="row sticky-top  bg-white p-2 shadow-sm">
                 <div className="col-12">
                     <InputGroup>
-                        <InputGroup.Text className="d-none d-md-block">Dia da semana</InputGroup.Text>
-                        <Form.Select
+                        <InputGroup.Text className="d-none d-md-block">Dias da semana</InputGroup.Text>
+                        <Select
+                            isMulti
+                            options={dayOptions}
+                            value={dayOptions.filter(option => selectedDays.includes(option.value))}
+                            onChange={handleDaysChange}
+                            placeholder="Escolha os dias"
                             className="form-select"
-                            value={selectedDay}
-                            onChange={(e) => setSelectedDay(e.target.value)}
-                        >
-                            <option value="">Escolha um dia</option>
-                            <option value="Domingo">Domingo</option>
-                            <option value="Segunda-feira">Segunda-feira</option>
-                            <option value="Terça-feira">Terça-feira</option>
-                            <option value="Quarta-feira">Quarta-feira</option>
-                            <option value="Quinta-feira">Quinta-feira</option>
-                            <option value="Sexta-feira">Sexta-feira</option>
-                            <option value="Sábado">Sábado</option>
-                        </Form.Select>
-                        <Button variant="primary" onClick={addDay}>Adicionar Dia</Button>
+                        />
+                        <Button variant="primary" onClick={addDay}>Adicionar Dias</Button>
                         <Button variant="success" onClick={openSaveModal}>
                             <span className="d-none d-md-block">Salvar</span>
                             <i className="bi bi-save d-md-none"></i>
@@ -188,7 +208,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                 <Card key={day.id} className="mb-4 mt-3">
                     <Card.Header>
                         <Stack direction="horizontal" gap={3}>
-                            <Card.Title className="flex-grow-1">{day.name}</Card.Title>
+                            <Card.Title className="flex-grow-1">{day.name.split(',').map( e => {
+                                const dayName = e.trim();
+                                return (
+                                    <span key={dayName} className="badge bg-primary me-1">
+                                        {dayName}
+                                    </span>
+                                );
+                            })}</Card.Title>
                             <FormControl
                                 // className="w-25"
                                 placeholder="Label"
@@ -207,99 +234,102 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                         <Form>
                             <Row className=''>
                                 {day.workouts.map((workout, index) => (
-                                    <Row key={index} className="mb-2">
-                                        <Col md={1} sm={2} xs={12} className='d-flex align-items-center'>
-                                            <CloseButton
-                                                className="ms-auto"
-                                                onClick={() => removeWorkout(day.id, index)}
-                                            />
-                                        </Col>
-                                        <Col md={5} sm={12} xs={12} className=''>
-                                            <FloatingLabel label="Aparelho">
-                                                <Form.Control
-                                                    type="text"
-                                                    placeholder="Aparelho"
-                                                    value={workout.aparelho}
-                                                    size='sm'
-                                                    onChange={(e) => handleWorkoutChange(day.id, index, 'aparelho', e.target.value)}
+                                    <Card key={index} className="p-2 mb-2">
+                                        <Row key={index}>
+                                            <Col md={1} sm={2} xs={12} className='d-flex align-items-center'>
+                                                <CloseButton
+                                                    className="ms-auto"
+                                                    onClick={() => removeWorkout(day.id, index)}
                                                 />
-                                            </FloatingLabel>
-                                        </Col>
-                                        <Col md={6} sm={12} xs={12}>
-                                            <InputGroup>
-                                            <Col md={2} sm={2} xs={12}>
-                                                <FloatingLabel label="Séries">
+                                            </Col>
+                                            <Col md={5} sm={12} xs={12} className=''>
+                                                <FloatingLabel label="Aparelho">
                                                     <Form.Control
-                                                        type="number"
+                                                        type="text"
+                                                        placeholder="Aparelho"
+                                                        value={workout.aparelho}
                                                         size='sm'
-                                                        placeholder="Séries"
-                                                        value={workout.serie}
-                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'serie', e.target.value)}
+                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'aparelho', e.target.value)}
                                                     />
                                                 </FloatingLabel>
                                             </Col>
-                                            <Col md={2} sm={2} xs={12}>
-                                                <FloatingLabel label="Repetir">
-                                                    <Form.Control
-                                                        type="number"
-                                                        size='sm'
-                                                        placeholder="Repetições"
-                                                        value={workout.repeticao}
-                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'repeticao', e.target.value)}
-                                                    />
-                                                </FloatingLabel>
+                                            <Col md={6} sm={12} xs={12}>
+                                                <InputGroup>
+                                                    <Col md={2} sm={2} xs={12}>
+                                                        <FloatingLabel label="Séries">
+                                                            <Form.Control
+                                                                type="number"
+                                                                size='sm'
+                                                                placeholder="Séries"
+                                                                value={workout.serie}
+                                                                onChange={(e) => handleWorkoutChange(day.id, index, 'serie', e.target.value)}
+                                                            />
+                                                        </FloatingLabel>
+                                                    </Col>
+                                                    <Col md={2} sm={2} xs={12}>
+                                                        <FloatingLabel label="Repetir">
+                                                            <Form.Control
+                                                                type="number"
+                                                                size='sm'
+                                                                placeholder="Repetições"
+                                                                value={workout.repeticao}
+                                                                onChange={(e) => handleWorkoutChange(day.id, index, 'repeticao', e.target.value)}
+                                                            />
+                                                        </FloatingLabel>
+                                                    </Col>
+                                                    <Col md={8} sm={8} xs={12}>
+                                                        <FloatingLabel label="Complemento">
+                                                            <Form.Control
+                                                                type="text"
+                                                                size='sm'
+                                                                placeholder="Complemento"
+                                                                value={workout.complemento} // Alterado de repeticaoExtra para complemento
+                                                                onChange={(e) => handleWorkoutChange(day.id, index, 'complemento', e.target.value)} // Alterado de repeticaoExtra para complemento
+                                                            />
+                                                        </FloatingLabel>
+                                                    </Col>
+                                                </InputGroup>
                                             </Col>
-                                            <Col md={8} sm={8} xs={12}>
-                                                <FloatingLabel label="Complemento">
+                                            <Col lg={6} md={1} sm={1} xs={12} className='d-sm-none d-md-block'>
+                                                {/* spacer */}
+                                            </Col>
+
+                                            <Col lg={3} md={5} sm={6} xs={12}>
+                                                <InputGroup>
+                                                    <FloatingLabel label="Pausa">
+                                                        <Form.Control
+                                                            type="number"
+                                                            size='sm'
+                                                            placeholder="Pausa"
+                                                            value={workout.pausa}
+                                                            onChange={(e) => handleWorkoutChange(day.id, index, 'pausa', e.target.value)}
+                                                        />
+                                                    </FloatingLabel>
+                                                    <InputGroup.Text>
+                                                        <ToggleField
+                                                            options={['min', 'seg']}
+                                                            className="d-flex align-items-center"
+                                                            defaultOption={workout.unidadeTempo === 'min' ? 0 : 1}
+                                                            value={workout.unidadeTempo}
+                                                            onChange={(checked) => handleWorkoutChange(day.id, index, 'unidadeTempo', checked)}
+                                                        />
+                                                    </InputGroup.Text>
+                                                </InputGroup>
+                                            </Col>
+
+                                            <Col lg={3} md={6} sm={6} xs={12} >
+                                                <FloatingLabel label="Assistir">
                                                     <Form.Control
                                                         type="text"
                                                         size='sm'
-                                                        placeholder="Complemento"
-                                                        value={workout.complemento} // Alterado de repeticaoExtra para complemento
-                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'complemento', e.target.value)} // Alterado de repeticaoExtra para complemento
+                                                        placeholder="Assistir"
+                                                        value={workout.assistir}
+                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'assistir', e.target.value)}
                                                     />
                                                 </FloatingLabel>
                                             </Col>
-                                            </InputGroup>
-                                        </Col>
-                                        <Col lg={6} md={1} sm={1} xs={12} className='d-sm-none d-md-block'>
-                                        {/* spacer */}
-                                        </Col>
-
-                                        <Col lg={3} md={5} sm={6} xs={12}>
-                                        <InputGroup>
-                                                <FloatingLabel label="Pausa">
-                                                    <Form.Control
-                                                        type="number"
-                                                        size='sm'
-                                                        placeholder="Pausa"
-                                                        value={workout.pausa}
-                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'pausa', e.target.value)}
-                                                    />
-                                                </FloatingLabel>
-                                                <InputGroup.Text>
-                                                <ToggleField
-                                                    options={['min', 'seg']}
-                                                    className="d-flex align-items-center"
-                                                    defaultOption={workout.unidadeTempo === 'min' ? 0 : 1}
-                                                    onChange={(checked) => handleWorkoutChange(day.id, index, 'unidadeTempo', checked ? 'seg' : 'min')}
-                                                />
-                                                </InputGroup.Text>
-                                            </InputGroup>
-                                        </Col>
-
-                                        <Col lg={3} md={6} sm={6} xs={12} >
-                                            <FloatingLabel label="Assistir">
-                                                <Form.Control
-                                                    type="text"
-                                                    size='sm'
-                                                    placeholder="Assistir"
-                                                    value={workout.assistir}
-                                                    onChange={(e) => handleWorkoutChange(day.id, index, 'assistir', e.target.value)}
-                                                />
-                                            </FloatingLabel>
-                                        </Col>
-                                    </Row>
+                                        </Row>
+                                    </Card>
                                 ))}
                             </Row>
                             {day.workouts.length > 0 && (
