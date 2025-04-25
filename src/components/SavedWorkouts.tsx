@@ -35,6 +35,14 @@ const SavedWorkoutsPage: React.FC = () => {
         });
     };
 
+    const handlePdfViewWorkout = (workoutName: string) => {
+        // Redireciona para a página de visualização do PDF com o treino selecionado
+        router.push({
+            pathname: `/pdf-preview/${workoutName}`, // Caminho da página onde o PDF será exibido
+            query: { name: workoutName },            // Passa o nome do treino como query param
+        });
+    };
+
     const handleDeleteWorkout = (workoutName: string) => {
         if (window.confirm(`Deseja realmente excluir a ficha "${workoutName}"?`)) {
             const updatedWorkouts = { ...workoutList };
@@ -64,7 +72,14 @@ const SavedWorkoutsPage: React.FC = () => {
                                     className="me-2"
                                     onClick={() => handleViewWorkout(workoutName)}
                                 >
-                                    Visualizar
+                                    Editar
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    className="me-2"
+                                    onClick={() => handlePdfViewWorkout(workoutName)}
+                                >
+                                    Visualizar PDF
                                 </Button>
                                 <Button
                                     variant="danger"

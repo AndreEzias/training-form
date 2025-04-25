@@ -19,3 +19,11 @@ export interface CellWithLink {
     content: string;
     link: string;
 }
+
+export interface WorkoutOption {
+    tipoTreino: string;
+    diasDaSemana: string[];
+    serie: number;
+    repeticao: number;
+    link: string;
+}

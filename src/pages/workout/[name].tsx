@@ -7,12 +7,12 @@ import {Container} from "react-bootstrap";
 const WorkoutPage: React.FC = () => {
     const router = useRouter();
     const { name } = router.query; // Obtém o nome do treino pela URL
-    const [workoutData, setWorkoutData] = useState();
+    const [workoutData, setWorkoutData] = useState(); // Certifique-se de que não há caracteres ocultos aqui
 
     // Carrega os dados do treino salvo (localStorage, API, etc.)
     useEffect(() => {
         if (name) {
-            const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '{}');
+            const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '{}'); // Verifique se há caracteres inválidos
             setWorkoutData(savedWorkouts[name as string] || []);
         }
     }, [name]);
@@ -27,7 +27,10 @@ const WorkoutPage: React.FC = () => {
                     <Container>
                         <h2 className="mt-2">{name}</h2>
                     </Container>
-                    <WorkoutForm workoutNameProp={name} workoutData={workoutData} />
+                    <WorkoutForm
+                        workoutNameProp={name} 
+                        workoutData={workoutData} 
+                    />
                 </>
             )}
         </>

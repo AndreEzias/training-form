@@ -5,31 +5,25 @@ import { Button, Container, FloatingLabel, Form, FormControl, Row, Stack, Modal 
 import { Card, CloseButton } from "react-bootstrap";
 import { Col } from "react-bootstrap";
 import { buildPDF, saveDocAndroid, saveWeb } from '@/services/GeneratePDF';
-import { Day, Workout } from '@/types/workout.types';
+import { Day, Workout, WorkoutOption } from '@/types/workout.types';
 import ToggleField from './toggle-switch/ToggleField';
 import Select from 'react-select';
 
-interface WorkoutOption {
-    tipoTreino: string;
-    diasDaSemana: string[];
-    serie: number;
-    repeticao: number;
-    link: string;
-}
-
 interface WorkoutFormProps {
-    workoutData?: Day[]; // Dados iniciais do treino, passado (opcionalmente) como props
+    workoutData?: {
+        days: Day[];
+        workoutOptionals: WorkoutOption[];
+    }
     workoutNameProp?: string | string[];
-    workoutOptionals?: WorkoutOption[];
 }
 
-const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp, workoutOptionals }) => {
+const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp }) => {
     const [days, setDays] = useState<Day[]>([]);
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [workoutName, setWorkoutName] = useState<string>(typeof workoutNameProp === 'string' ? workoutNameProp : '');
     const [isAndroidDevice, setIsAndroidDevice] = useState(false);
-    const [workoutOptionsState, setWorkoutOptionsState] = useState(workoutOptionals || []);
+    const [workoutOptionsState, setWorkoutOptionsState] = useState<WorkoutOption[]>([]);
 
 
     const dayOptions = [
@@ -48,18 +42,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
     }, []);
 
     useEffect(() => {
-        // Atualiza o estado (days) ao receber novos dados pela prop workoutData
         if (workoutData) {
-            setDays(workoutData);
+            setDays(workoutData.days || []); // Atualiza os dias
+            setWorkoutOptionsState(workoutData.workoutOptionals || []); // Atualiza as atividades opcionais
         }
     }, [workoutData]);
-
-    useEffect(() => {
-        if (workoutOptionals) {
-            setWorkoutOptionsState(workoutOptionals);
-        }
-    }
-    , [workoutOptionals]);
 
     const handleDaysChange = (selectedOptions: any) => {
         const values = selectedOptions.map((option: any) => option.value);
@@ -83,9 +70,25 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
         setSelectedDays([]); // Limpa a seleção após adicionar
     };
 
+    const addNewOption = () => {
+        const newOption: WorkoutOption = {
+            tipoTreino: '',
+            diasDaSemana: [],
+            serie: 0,
+            repeticao: 0,
+            link: ''
+        };
+        setWorkoutOptionsState([...workoutOptionsState, newOption]);
+    };
+
     const removeDay = (dayId: number) => {
         setDays(days.filter(day => day.id !== dayId));
     };
+
+    const removeWorkoutOption = (index: number) => {
+        const newOptions = workoutOptionsState.filter((_, i) => i !== index);
+        setWorkoutOptionsState(newOptions);
+    }
 
     const addWorkout = (dayId: number) => {
         setDays(days.map(day =>
@@ -130,13 +133,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
         ));
     };
 
+    const handleWorkoutOptionsChange = (index: number, field: keyof WorkoutOption, value: any) => {
+        const newOptions = [...workoutOptionsState];
+        newOptions[index] = { ...newOptions[index], [field]: value };
+        setWorkoutOptionsState(newOptions);
+    };
+
     const printPDF = () => {
         if (days.length === 0) {
             alert("Por favor, adicione pelo menos um dia.");
             return;
         }
 
-        const doc = buildPDF(days);
+        const doc = buildPDF(days, workoutOptionsState);
 
         saveWeb(doc);
     };
@@ -147,7 +156,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
             return;
         }
 
-        const doc = buildPDF(days);
+        const doc = buildPDF(days, workoutOptionsState);
 
         saveDocAndroid(doc);
     };
@@ -170,12 +179,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
             }
         }
 
-        // Adiciona ou sobrescreve a ficha no localStorage
-        savedWorkouts[workoutName] = days;
+        savedWorkouts[workoutName] = {
+            days,
+            workoutOptionals: workoutOptionsState
+        };
 
         localStorage.setItem('workouts', JSON.stringify(savedWorkouts));
         alert("Ficha salva com sucesso!");
-        setShowModal(false); // Fecha o modal após salvar
+        setShowModal(false);
     };
 
     const openSaveModal = () => {
@@ -190,52 +201,31 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
 
     return (
         <Container className="container mt-4">
-            <Row>
-                <Col>
+            <Row className='mb-3'>
+                <Col lg={10} md={8} sm={8} xs={6}>
                     <h2>Atividades opcionais</h2>
                 </Col>
-                <Col>
+                <Col lg={2} md={4} sm={4} xs={6}>
                     <InputGroup>
-                        <Button
-                            variant="primary"
-                            onClick={() => {
-                                const newOption: WorkoutOption = {
-                                    tipoTreino: '',
-                                    diasDaSemana: [],
-                                    serie: 0,
-                                    repeticao: 0,
-                                    link: ''
-                                };
-
-                                setWorkoutOptionsState([...workoutOptionsState, newOption]);
-                            }}
-                        >Adicionar atividade</Button>
+                        <Button variant="primary" onClick={addNewOption}>
+                            Adicionar atividade
+                        </Button>
                     </InputGroup>
                 </Col>
             </Row>
-            <Row>
+            <Row className='mb-3'>
                 {workoutOptionsState.map((option, index) => (
                     <Card key={index} className="p-2 mb-2">
                         <Row>
                             <Col lg={1} md={1} sm={12} xs={12}>
-                                <CloseButton
-                                    className="ms-auto"
-                                    onClick={() => {
-                                        const newOptions = workoutOptionsState.filter((_, i) => i !== index);
-                                        setWorkoutOptionsState(newOptions);
-                                    }}
-                                />
+                                <CloseButton className="ms-auto" onClick={() => removeWorkoutOption(index)} />
                             </Col>
                             <Col lg={7} md={7} sm={12} xs={12}>
                                 <FloatingLabel label="Tipo de treino">
                                     <Form.Select
                                         value={option.tipoTreino}
                                         size='sm'
-                                        onChange={(e) => {
-                                            const newOptions = [...workoutOptionsState];
-                                            newOptions[index].tipoTreino = e.target.value;
-                                            setWorkoutOptionsState(newOptions);
-                                        }}
+                                        onChange={(e) => handleWorkoutOptionsChange(index, 'tipoTreino', e.target.value)}
                                     >
                                         <option value="">Selecione</option>
                                         <option value="mobilidade">Mobilidade</option>
@@ -255,11 +245,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
                                             size='sm'
                                             placeholder="Séries"
                                             value={option.serie}
-                                            onChange={(e) => {
-                                                const newOptions = [...workoutOptionsState];
-                                                newOptions[index].serie = parseInt(e.target.value);
-                                                setWorkoutOptionsState(newOptions);
-                                            }}
+                                            onChange={(e) => handleWorkoutOptionsChange(index, 'serie', parseInt(e.target.value))}
                                         />
                                     </FloatingLabel>
                                     <FloatingLabel label="Repetições">
@@ -268,11 +254,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
                                             size='sm'
                                             placeholder="Repetições"
                                             value={option.repeticao}
-                                            onChange={(e) => {
-                                                const newOptions = [...workoutOptionsState];
-                                                newOptions[index].repeticao = parseInt(e.target.value);
-                                                setWorkoutOptionsState(newOptions);
-                                            }}
+                                            onChange={(e) => handleWorkoutOptionsChange(index, 'repeticao', parseInt(e.target.value))}
                                         />
                                     </FloatingLabel>
                                 </InputGroup>
@@ -283,11 +265,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
                                     isMulti
                                     options={dayOptions}
                                     value={dayOptions.filter(option => workoutOptionsState[index].diasDaSemana.includes(option.value))}
-                                    onChange={(selectedOptions) => {
-                                        const newOptions = [...workoutOptionsState];
-                                        newOptions[index].diasDaSemana = selectedOptions.map((option: any) => option.value);
-                                        setWorkoutOptionsState(newOptions);
-                                    }}
+                                    onChange={(selectedOptions) => handleWorkoutOptionsChange(index, 'diasDaSemana', selectedOptions.map((option: any) => option.value))}
                                     placeholder="Escolha os dias"
                                     className="form-select"
                                 />
@@ -299,11 +277,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
                                         placeholder="Link"
                                         value={option.link}
                                         size='lg'
-                                        onChange={(e) => {
-                                            const newOptions = [...workoutOptionsState];
-                                            newOptions[index].link = e.target.value;
-                                            setWorkoutOptionsState(newOptions);
-                                        }}
+                                        onChange={(e) => handleWorkoutOptionsChange(index, 'link', e.target.value)}
                                     />
                                 </FloatingLabel>
                             </Col>
@@ -316,38 +290,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
                     <h2>Treinos</h2>
                 </Col>
             </Row>
-            <div className="row sticky-top  bg-white p-2 shadow-sm">
-                <div className="col-12">
-                    <InputGroup>
-                        <InputGroup.Text className="d-none d-md-block">Dias da semana</InputGroup.Text>
-                        <Select
-                            isMulti
-                            options={dayOptions}
-                            value={dayOptions.filter(option => selectedDays.includes(option.value))}
-                            onChange={handleDaysChange}
-                            placeholder="Escolha os dias"
-                            className="form-select"
-                        />
-                        <Button variant="primary" onClick={addDay}>Adicionar Dias</Button>
-                        <Button variant="success" onClick={openSaveModal}>
-                            <span className="d-none d-md-block">Salvar</span>
-                            <i className="bi bi-save d-md-none"></i>
-                        </Button>
-                        {!isAndroidDevice && (
-                            <Button variant="secondary" onClick={printPDF}>
-                                <span className="d-none d-md-block">Imprimir</span>
-                                <i className="bi bi-printer d-md-none"></i>
-                            </Button>
-                        )}
-                        {isAndroidDevice && (
-                            <Button variant="secondary" onClick={downloadPDF}>
-                                <span className="d-none d-md-block">Baixar PDF</span>
-                                <i className="bi bi-download d-md-none"></i>
-                            </Button>
-                        )}
-                    </InputGroup>
-                </div>
-            </div>
+
             {days.map(day => (
                 <Card key={day.id} className="mb-4 mt-3">
                     <Card.Header>
@@ -399,7 +342,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
                                             </Col>
                                             <Col md={6} sm={12} xs={12}>
                                                 <InputGroup>
-                                                    <Col md={2} sm={2} xs={12}>
+                                                    <Col md={2} sm={2} xs={6}>
                                                         <FloatingLabel label="Séries">
                                                             <Form.Control
                                                                 type="number"
@@ -410,7 +353,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
                                                             />
                                                         </FloatingLabel>
                                                     </Col>
-                                                    <Col md={2} sm={2} xs={12}>
+                                                    <Col md={2} sm={2} xs={6}>
                                                         <FloatingLabel label="Repetir">
                                                             <Form.Control
                                                                 type="number"
@@ -483,6 +426,39 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp,
                     </Card.Body>
                 </Card>
             ))}
+
+            <div className="row sticky-top  bg-white p-2 shadow-sm">
+                <div className="col-12">
+                    <InputGroup>
+                        <InputGroup.Text className="d-none d-md-block">Dias da semana</InputGroup.Text>
+                        <Select
+                            isMulti
+                            options={dayOptions}
+                            value={dayOptions.filter(option => selectedDays.includes(option.value))}
+                            onChange={handleDaysChange}
+                            placeholder="Escolha os dias"
+                            className="form-select"
+                        />
+                        <Button variant="primary" onClick={addDay}>Adicionar Dias</Button>
+                        <Button variant="success" onClick={openSaveModal}>
+                            <span className="d-none d-md-block">Salvar</span>
+                            <i className="bi bi-save d-md-none"></i>
+                        </Button>
+                        {!isAndroidDevice && (
+                            <Button variant="secondary" onClick={printPDF}>
+                                <span className="d-none d-md-block">Imprimir</span>
+                                <i className="bi bi-printer d-md-none"></i>
+                            </Button>
+                        )}
+                        {isAndroidDevice && (
+                            <Button variant="secondary" onClick={downloadPDF}>
+                                <span className="d-none d-md-block">Baixar PDF</span>
+                                <i className="bi bi-download d-md-none"></i>
+                            </Button>
+                        )}
+                    </InputGroup>
+                </div>
+            </div>
 
             {/* Modal para salvar a ficha */}
             <Modal show={showModal} onHide={closeSaveModal}>
