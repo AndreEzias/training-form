@@ -6,7 +6,8 @@ import { Card, CloseButton } from "react-bootstrap";
 import { Col } from "react-bootstrap";
 import { buildPDF, saveDocAndroid, saveWeb } from '@/services/GeneratePDF';
 import { Day, Workout } from '@/types/workout.types';
-
+import CustomSwitch from './custom-switch/CustomSwitch';
+import ToggleField from './toggle-switch/ToggleField';
 interface WorkoutFormProps {
     workoutData?: Day[]; // Dados iniciais do treino, passado (opcionalmente) como props
     workoutNameProp?: string | string[];
@@ -52,8 +53,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                     aparelho: '',
                     serie: 0,
                     repeticao: 0,
-                    repeticaoExtra: 0,
+                    complemento: '',
                     pausa: 0,
+                    unidadeTempo: 'seg', // Novo campo adicionado
                     assistir: ''
                 }]
             } : day
@@ -203,7 +205,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                     </Card.Header>
                     <Card.Body>
                         <Form>
-                            <Row>
+                            <Row className=''>
                                 {day.workouts.map((workout, index) => (
                                     <Row key={index} className="mb-2">
                                         <Col md={1} sm={2} xs={12} className='d-flex align-items-center'>
@@ -212,7 +214,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                                                 onClick={() => removeWorkout(day.id, index)}
                                             />
                                         </Col>
-                                        <Col md={4} sm={12} xs={12} className=''>
+                                        <Col md={5} sm={12} xs={12} className=''>
                                             <FloatingLabel label="Aparelho">
                                                 <Form.Control
                                                     type="text"
@@ -223,8 +225,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                                                 />
                                             </FloatingLabel>
                                         </Col>
-                                        <Col md={4} sm={2} xs={12}>
+                                        <Col md={6} sm={12} xs={12}>
                                             <InputGroup>
+                                            <Col md={2} sm={2} xs={12}>
                                                 <FloatingLabel label="Séries">
                                                     <Form.Control
                                                         type="number"
@@ -234,6 +237,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                                                         onChange={(e) => handleWorkoutChange(day.id, index, 'serie', e.target.value)}
                                                     />
                                                 </FloatingLabel>
+                                            </Col>
+                                            <Col md={2} sm={2} xs={12}>
                                                 <FloatingLabel label="Repetir">
                                                     <Form.Control
                                                         type="number"
@@ -243,15 +248,26 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                                                         onChange={(e) => handleWorkoutChange(day.id, index, 'repeticao', e.target.value)}
                                                     />
                                                 </FloatingLabel>
-                                                <FloatingLabel label="+ Repete">
+                                            </Col>
+                                            <Col md={8} sm={8} xs={12}>
+                                                <FloatingLabel label="Complemento">
                                                     <Form.Control
-                                                        type="number"
+                                                        type="text"
                                                         size='sm'
-                                                        placeholder="+ Repetições"
-                                                        value={workout.repeticaoExtra}
-                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'repeticaoExtra', e.target.value)}
+                                                        placeholder="Complemento"
+                                                        value={workout.complemento} // Alterado de repeticaoExtra para complemento
+                                                        onChange={(e) => handleWorkoutChange(day.id, index, 'complemento', e.target.value)} // Alterado de repeticaoExtra para complemento
                                                     />
                                                 </FloatingLabel>
+                                            </Col>
+                                            </InputGroup>
+                                        </Col>
+                                        <Col lg={6} md={1} sm={1} xs={12} className='d-sm-none d-md-block'>
+                                        {/* spacer */}
+                                        </Col>
+
+                                        <Col lg={3} md={5} sm={6} xs={12}>
+                                        <InputGroup>
                                                 <FloatingLabel label="Pausa">
                                                     <Form.Control
                                                         type="number"
@@ -261,10 +277,18 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                                                         onChange={(e) => handleWorkoutChange(day.id, index, 'pausa', e.target.value)}
                                                     />
                                                 </FloatingLabel>
+                                                <InputGroup.Text>
+                                                <ToggleField
+                                                    options={['min', 'seg']}
+                                                    className="d-flex align-items-center"
+                                                    defaultOption={workout.unidadeTempo === 'min' ? 0 : 1}
+                                                    onChange={(checked) => handleWorkoutChange(day.id, index, 'unidadeTempo', checked ? 'seg' : 'min')}
+                                                />
+                                                </InputGroup.Text>
                                             </InputGroup>
                                         </Col>
 
-                                        <Col md={3} sm={2} xs={12} >
+                                        <Col lg={3} md={6} sm={6} xs={12} >
                                             <FloatingLabel label="Assistir">
                                                 <Form.Control
                                                     type="text"
