@@ -15,11 +15,6 @@ const setHeaderPage = (doc: jsPDF) => {
     doc.addImage(img, 'PNG', x, y, imgWidth, imgHeight);
 }
 
-const resetFont = (doc: jsPDF) => {
-    doc.setFont(fontDefault, "normal");
-    doc.setTextColor(0, 0, 0); // Define a cor do texto para preto
-}
-
 const setMarginPage = (doc: jsPDF) => {
     const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
     const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
@@ -51,17 +46,25 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
     setHeaderPage(doc);
     setMarginPage(doc);
 
-    doc.setFontSize(20);
     linePosition += 15;
-    doc.text('Treino complementar', pageWidth / 2, linePosition, {
+    doc.setFontSize(30);
+    doc.setFont(fontDefault, "bold");
+    doc.text('Ficha de Treino', pageWidth / 2, linePosition, {
         align: 'center',
     });
 
     const positionRight = pageWidth / 10;
     const positionLeft = pageWidth / 3;
 
+    if (workoutOptions.length > 0) {
+        linePosition += 10;
+        doc.setFontSize(20);
+        doc.setFont(fontDefault, "italic");
+        doc.text('Exercícios Complementares', positionRight, linePosition);
+    }
+
     // Adiciona os treinos opcionais
-    workoutOptions.forEach((option, index) => {
+    workoutOptions.forEach((option) => {
         linePosition += 10;
         doc.setFontSize(14);
         doc.setFont(fontDefault, "bold");
@@ -90,17 +93,28 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
         doc.line(10, linePosition, pageWidth - 10, linePosition);
     });
 
-    // page 2
-    linePosition = 15;
-    doc.addPage();
-    setHeaderPage(doc);
-    setMarginPage(doc);
+    linePosition += 10;
+    doc.setFontSize(20);
+    doc.setFont(fontDefault, "bold");
+    doc.text('Treino', pageWidth / 2, linePosition, {
+        align: 'center',
+    });
 
-    linePosition += 15;
-    doc.setFontSize(12);
-    days.forEach((day, dayIndex) => {
-    
-        doc.setFontSize(18);
+
+    linePosition += 10;
+    doc.setFontSize(18);
+    doc.setFont(fontDefault, "normal");
+
+    days.forEach((day) => {
+        const nextHeight = (day.workouts.length * 10) + 20;
+        if (linePosition + nextHeight > (pageHeight - 10)) {
+            linePosition = 30;
+            doc.addPage();
+            setHeaderPage(doc);
+            setMarginPage(doc);
+        }
+
+       
         doc.text(`${day.name}`, positionRight, linePosition);
         linePosition += 10;
         const tableData = day.workouts.map(workout => {
@@ -138,20 +152,22 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
             }
         });
 
-    
-        linePosition +=  doc.lastAutoTable.finalY - 20;
-        if (linePosition > pageHeight - 20) {
-            doc.addPage();
-            setHeaderPage(doc);
-            setMarginPage(doc);
-            linePosition = 15;
-        }
+        linePosition +=  nextHeight;
     });
     return doc;
 }
 
 // 3. Função para gerar e baixar o PDF
-export async function saveDocAndroid(doc: jsPDF) {
+export async function saveDocAndroid(doc: jsPDF, days: Day[]) {
+    // Converte links para texto simples no Android
+    days.forEach(day => {
+        day.workouts.forEach(workout => {
+            if (workout.assistir) {
+                workout.assistir = `Link: ${workout.assistir}`;
+            }
+        });
+    });
+
     // Obtenha os dados do PDF como base64
     const pdfBase64 = doc.output('datauristring').split(',')[1];
 

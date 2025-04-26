@@ -17,6 +17,11 @@ interface WorkoutFormProps {
     workoutNameProp?: string | string[];
 }
 
+interface Option {
+    value: string;
+    label: string;
+}
+
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp }) => {
     const [days, setDays] = useState<Day[]>([]);
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -48,8 +53,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         }
     }, [workoutData]);
 
-    const handleDaysChange = (selectedOptions: any) => {
-        const values = selectedOptions.map((option: any) => option.value);
+    const handleDaysChange = (selectedOptions: Option[]) => {
+        const values = selectedOptions.map((option: Option) => option.value);
         setSelectedDays(values);
     };
 
@@ -133,7 +138,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         ));
     };
 
-    const handleWorkoutOptionsChange = (index: number, field: keyof WorkoutOption, value: any) => {
+    const handleWorkoutOptionsChange = (index: number, field: keyof WorkoutOption, value: string | number | string[]) => {
         const newOptions = [...workoutOptionsState];
         newOptions[index] = { ...newOptions[index], [field]: value };
         setWorkoutOptionsState(newOptions);
@@ -265,7 +270,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                                     isMulti
                                     options={dayOptions}
                                     value={dayOptions.filter(option => workoutOptionsState[index].diasDaSemana.includes(option.value))}
-                                    onChange={(selectedOptions) => handleWorkoutOptionsChange(index, 'diasDaSemana', selectedOptions.map((option: any) => option.value))}
+                                    onChange={(selectedOptions) => handleWorkoutOptionsChange(index, 'diasDaSemana', selectedOptions.map((option: Option) => option.value))}
                                     placeholder="Escolha os dias"
                                     className="form-select"
                                 />
@@ -435,7 +440,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                             isMulti
                             options={dayOptions}
                             value={dayOptions.filter(option => selectedDays.includes(option.value))}
-                            onChange={handleDaysChange}
+                            onChange={newValue => handleDaysChange(newValue as Option[])}
                             placeholder="Escolha os dias"
                             className="form-select"
                         />

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { Col, Container, Row } from 'react-bootstrap';
 import Header from '@/components/Header';
@@ -8,28 +8,20 @@ import { Day, WorkoutOption } from '@/types/workout.types';
 const PdfPreviewPage: React.FC = () => {
     const router = useRouter();
     const { name } = router.query;
-    const [workoutData, setWorkoutData] = useState<{ days: Day[]; workoutOptionals: WorkoutOption[] } | null>(null); // Certifique-se de que n�o h� caracteres ocultos aqui
+    const [workoutData, setWorkoutData] = useState<{ days: Day[]; workoutOptionals: WorkoutOption[] } | null>(null);
 
     // Carrega os dados do treino salvo (localStorage, API, etc.)
     useEffect(() => {
         if (name) {
-            const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '{}'); // Verifique se h� caracteres inv�lidos
+            const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '{}');
             setWorkoutData(savedWorkouts[name as string] || []);
         }
     }, [name]);
 
-    useEffect(() => {
-        if (workoutData) {
-            const days = workoutData?.days || []; // Certifique-se de que o tipo esteja correto
-            const workoutOptionals = workoutData?.workoutOptionals || []; // Certifique-se de que o tipo esteja correto
-            renderPdfPreview(days, workoutOptionals);
-        }
-    }, [workoutData]);
-
-    const renderPdfPreview = (days: Day[], workoutOptionals: WorkoutOption[]) => {
+    const renderPdfPreview = useCallback((days: Day[], workoutOptionals: WorkoutOption[]) => {
         const doc = buildPDF(days, workoutOptionals);
         const pdfPreviewContainer = document.getElementById('pdf-preview');
-        const pageHeight = window.innerHeight - 100; // Ajuste a altura conforme necessário
+        const pageHeight = window.innerHeight - 100;
         // adiciona nome ao pdf
         doc.setProperties({
             title: `Treino ${name}`,
@@ -46,7 +38,15 @@ const PdfPreviewPage: React.FC = () => {
            
             pdfPreviewContainer.appendChild(iframe);
         }
-    }
+    }, [name]);
+
+    useEffect(() => {
+        if (workoutData) {
+            const days = workoutData?.days || []; // Certifique-se de que o tipo esteja correto
+            const workoutOptionals = workoutData?.workoutOptionals || []; // Certifique-se de que o tipo esteja correto
+            renderPdfPreview(days, workoutOptionals);
+        }
+    }, [workoutData, renderPdfPreview]);
 
     return (
         <>
