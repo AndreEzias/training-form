@@ -21,9 +21,8 @@ export interface CellWithLink {
 }
 
 export interface WorkoutOption {
+    id: number;
     tipoTreino: string;
     diasDaSemana: string[];
-    serie: number;
-    repeticao: number;
-    link: string;
+    workouts: Workout[];
 }

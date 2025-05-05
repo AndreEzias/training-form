@@ -147,7 +147,9 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
                     const videoIcon = new Image();
                     videoIcon.src = '/play.png'; // Caminho para o ícone de vídeo
                     doc.addImage(videoIcon, 'PNG', data.cell.x + 2, data.cell.y + 2, 5, 5); // Adiciona o ícone
-                    doc.link(data.cell.x + 2, data.cell.y + 2, 5, 5, { url: (data.cell.raw as CellWithLink).link, target: '_blank' }); // Abre o link em outra aba
+                    doc.link(data.cell.x + 2, data.cell.y + 2, 5, 5, { 
+                        url: (data.cell.raw as CellWithLink).link, target: '_blank' 
+                    }); // Abre o link em outra aba
                 }
             }
         });
@@ -158,16 +160,7 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
 }
 
 // 3. Função para gerar e baixar o PDF
-export async function saveDocAndroid(doc: jsPDF, days: Day[]) {
-    // Converte links para texto simples no Android
-    days.forEach(day => {
-        day.workouts.forEach(workout => {
-            if (workout.assistir) {
-                workout.assistir = `Link: ${workout.assistir}`;
-            }
-        });
-    });
-
+export async function saveDocAndroid(doc: jsPDF) {
     // Obtenha os dados do PDF como base64
     const pdfBase64 = doc.output('datauristring').split(',')[1];
 
