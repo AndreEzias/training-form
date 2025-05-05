@@ -25,7 +25,7 @@ const WorkoutPage: React.FC = () => {
             ) : (
                 <>
                     <Container>
-                        <h2 className="mt-2">{name}</h2>
+                        <h1 className="mt-2">{name}</h1>
                     </Container>
                     <WorkoutForm
                         workoutNameProp={name} 
