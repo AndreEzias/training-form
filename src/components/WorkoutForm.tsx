@@ -35,11 +35,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
     const dayOptions = [
         { value: "Domingo", label: "Domingo" },
         { value: "Segunda-feira", label: "Segunda-feira" },
-        { value: "Terça-feira", label: "Terça-feira" },
+        { value: "TerÃ§a-feira", label: "TerÃ§a-feira" },
         { value: "Quarta-feira", label: "Quarta-feira" },
         { value: "Quinta-feira", label: "Quinta-feira" },
         { value: "Sexta-feira", label: "Sexta-feira" },
-        { value: "Sábado", label: "Sábado" },
+        { value: "SÃ¡bado", label: "SÃ¡bado" },
     ];
 
     useEffect(() => {
@@ -212,7 +212,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
 
         if (savedWorkouts[workoutName]) {
             const confirmOverwrite = window.confirm(
-                "Já existe uma ficha com esse nome. Deseja sobrescrevê-la?"
+                "JÃ¡ existe uma ficha com esse nome. Deseja sobrescrevÃª-la?"
             );
             if (!confirmOverwrite) {
                 return;
@@ -257,39 +257,43 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                 {workoutOptionsState.map((option, index) => (
                     <Card key={index} className="p-2 mb-2">
                         <Card.Header>
-                            <Stack direction="horizontal" gap={3}>
-                                <FloatingLabel label="Tipo de treino">
-                                    <Form.Select
-                                        value={option.tipoTreino}
-                                        size='sm'
-                                        onChange={(e) => handleWorkoutOptionsChange(index, 'tipoTreino', e.target.value)}
-                                    >
-                                        <option value="">Selecione</option>
-                                        <option value="mobilidade">Mobilidade</option>
-                                        <option value="aquecimento-inicial">Aquecimento Inicial</option>
-                                        <option value="aquecimento-pos-treino">Aquecimento pós treino</option>
-                                        <option value="alongamento">Alongamento</option>
-                                        <option value="cardio">Cardio</option>
-                                        <option value="pre-ativacao">Pré-ativação</option>
-                                    </Form.Select>
-                                </FloatingLabel>
-                                <Select
-                                    isMulti
-                                    options={dayOptions}
-                                    value={dayOptions.filter(option => workoutOptionsState[index].diasDaSemana.includes(option.value))}
-                                    onChange={(selectedOptions) => handleWorkoutOptionsChange(index, 'diasDaSemana', selectedOptions.map((option: Option) => option.value))}
-                                    placeholder="Escolha os dias"
-                                    className="form-select"
-                                />
-                                <Button size='sm' variant="success" onClick={() => addOptionWorkout(option.id)}>
-
-                                    <span className='d-none d-md-block'>Adicionar treino</span>
-                                    <i className="bi bi-plus d-md-none"></i>
-
-                                </Button>
-                                <div className="vr" />
-                                <CloseButton className="ms-auto" onClick={() => removeOption(index)} />
-                            </Stack>
+                            <Row className="align-items-center gy-2">
+                                <Col xs={12} lg={3}>
+                                    <FloatingLabel label="Tipo de treino">
+                                        <Form.Select
+                                            value={option.tipoTreino}
+                                            size='sm'
+                                            onChange={(e) => handleWorkoutOptionsChange(index, 'tipoTreino', e.target.value)}
+                                        >
+                                            <option value="">Selecione</option>
+                                            <option value="mobilidade">Mobilidade</option>
+                                            <option value="aquecimento-inicial">Aquecimento Inicial</option>
+                                            <option value="aquecimento-pos-treino">Aquecimento pós treino</option>
+                                            <option value="alongamento">Alongamento</option>
+                                            <option value="cardio">Cardio</option>
+                                            <option value="pre-ativacao">Pré-ativação</option>
+                                        </Form.Select>
+                                    </FloatingLabel>
+                                </Col>
+                                <Col xs={12} lg={6}>
+                                    <Select
+                                        isMulti
+                                        options={dayOptions}
+                                        value={dayOptions.filter(option => workoutOptionsState[index].diasDaSemana.includes(option.value))}
+                                        onChange={(selectedOptions) => handleWorkoutOptionsChange(index, 'diasDaSemana', selectedOptions.map((option: Option) => option.value))}
+                                        placeholder="Escolha os dias"
+                                        className="form-select"
+                                    />
+                                </Col>
+                                <Col xs={10} sm={9} lg={2}>
+                                    <Button className="w-100" size='sm' variant="success" onClick={() => addOptionWorkout(option.id)}>
+                                        <span>Adicionar treino</span>
+                                    </Button>
+                                </Col>
+                                <Col xs={2} sm={3} lg={1} className="text-end">
+                                    <CloseButton onClick={() => removeOption(index)} />
+                                </Col>
+                            </Row>
                         </Card.Header>
                         <Card.Body>
                             <Row id={uuid()} >
@@ -307,8 +311,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                             </Row>
                         </Card.Body>
                         <Card.Footer>
-                            {option.workouts.length > 0 && (
-                                <Button size='sm' variant="success" onClick={() => addOptionWorkout(option.id)}>Adicionar Treino</Button>
+                            {option.workouts.length > 1 && (
+                                <Row className='justify-content-end'>
+                                    <Col
+                                        xs={12} sm={12} md={12} lg={2}
+                                        className="d-flex justify-content-end">
+                                        <Button className="w-100" size='sm' variant="success" onClick={() => addOptionWorkout(option.id)}>
+                                            <span>Adicionar treino</span>
+                                        </Button>
+                                    </Col>
+                                </Row>
                             )}
                         </Card.Footer>
                     </Card>
@@ -316,7 +328,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
 
                 {workoutOptionsState.length === 0 && (
                     <div className="alert alert-info" role="alert">
-                        Nenhuma atividade opcional adicionada. Clique no botão "Adicionar atividade" para incluir uma.
+                        Nenhuma atividade opcional adicionada. Clique no botÃ£o "Adicionar atividade" para incluir uma.
                     </div>
                 )}
             </Row>
