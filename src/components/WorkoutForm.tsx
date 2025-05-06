@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import InputGroup from 'react-bootstrap/InputGroup';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import { Button, Container, FloatingLabel, Form, FormControl, Row, Stack, Modal } from "react-bootstrap";
+import { Button, Container, FloatingLabel, Form, FormControl, Row, Stack, Modal, Tab, Tabs } from "react-bootstrap";
 import { Col } from "react-bootstrap";
 import { buildPDF, saveDocAndroid, saveWeb } from '@/services/GeneratePDF';
 import { Day, Workout, WorkoutOption } from '@/types/workout.types';
@@ -30,6 +30,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
     const [workoutName, setWorkoutName] = useState<string>(typeof workoutNameProp === 'string' ? workoutNameProp : '');
     const [isAndroidDevice, setIsAndroidDevice] = useState(false);
     const [workoutOptionsState, setWorkoutOptionsState] = useState<WorkoutOption[]>([]);
+    const [activeTab, setActiveTab] = useState<string>('treinos');
 
     const dayOptions = [
         { value: "Domingo", label: "Domingo" },
@@ -211,7 +212,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
 
         if (savedWorkouts[workoutName]) {
             const confirmOverwrite = window.confirm(
-                "JÃ¡ existe uma ficha com esse nome. Deseja sobrescrevÃª-la?"
+                "Já existe uma ficha com esse nome. Deseja sobrescrevê-la?"
             );
             if (!confirmOverwrite) {
                 return;
@@ -240,108 +241,127 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
 
     return (
         <Container className="container mt-4">
-            <Row className='mb-3'>
-                <Col lg={10} md={8} sm={8} xs={6}>
-                    <h2>Atividades opcionais</h2>
-                </Col>
-                <Col lg={2} md={4} sm={4} xs={6}>
-                    <InputGroup>
-                        <Button variant="primary" onClick={addNewOption}>
-                            Adicionar atividade
-                        </Button>
-                    </InputGroup>
-                </Col>
-            </Row>
-            <Row className='mb-3'>
-                {workoutOptionsState.map((option, index) => (
-                    <OptionalWorkoutField
-                        key={index}
-                        option={option}
-                        index={index}
-                        dayOptions={dayOptions}
-                        onAddWorkout={addOptionWorkout}
-                        onRemove={removeOption}
-                        onChange={handleWorkoutOptionsChange}
-                    >
-                        {option.workouts.map((workout, workoutIndex) => (
-                            <WorkoutField
-                                key={workoutIndex}
-                                workout={workout}
-                                index={workoutIndex}
-                                isOption={true}
-                                id={option.id}
-                                onRemove={removeOptionWorkout}
-                                onChange={handleOptionWorkoutChange}
-                            />
-                        ))}
-                    </OptionalWorkoutField>
-                ))}
+            <Tabs
+                activeKey={activeTab}
+                onSelect={(k) => k && setActiveTab(k)}
+                id="workout-tabs"
+                className="mb-3"
+            >
+                <Tab eventKey="treinos" title="Treinos">
+                    <Row>
+                        <Col>
+                            <h2>Treinos</h2>
+                        </Col>
+                    </Row>
 
-                {workoutOptionsState.length === 0 && (
-                    <div className="alert alert-info" role="alert">
-                        Nenhuma atividade opcional adicionada. Clique no botão "Adicionar atividade" para incluir uma.
-                    </div>
-                )}
-            </Row>
-            <Row>
-                <Col>
-                    <h2>Treinos</h2>
-                </Col>
-            </Row>
-
-            {days.map(day => (
-                <DayWorkoutField 
-                    key={day.id}
-                    day={day}
-                    onLabelChange={handleDayLabelChange}
-                    onAddWorkout={addWorkout}
-                    onRemove={removeDay}
-                >
-                    {day.workouts.map((workout, index) => (
-                        <WorkoutField
-                            key={index}
-                            workout={workout}
-                            index={index}
-                            id={day.id}
-                            onRemove={removeWorkout}
-                            onChange={handleWorkoutChange}
-                        />
+                    {days.map(day => (
+                        <DayWorkoutField
+                            key={day.id}
+                            day={day}
+                            onLabelChange={handleDayLabelChange}
+                            onAddWorkout={addWorkout}
+                            onRemove={removeDay}
+                        >
+                            {day.workouts.map((workout, index) => (
+                                <WorkoutField
+                                    key={index}
+                                    workout={workout}
+                                    index={index}
+                                    id={day.id}
+                                    onRemove={removeWorkout}
+                                    onChange={handleWorkoutChange}
+                                />
+                            ))}
+                        </DayWorkoutField>
                     ))}
-                </DayWorkoutField>
-            ))}
 
-            <div className="row sticky-top  bg-white p-2 shadow-sm">
-                <div className="col-12">
-                    <InputGroup>
-                        <InputGroup.Text className="d-none d-md-block">Dias da semana</InputGroup.Text>
-                        <Select
-                            isMulti
-                            options={dayOptions}
-                            value={dayOptions.filter(option => selectedDays.includes(option.value))}
-                            onChange={newValue => handleDaysChange(newValue as Option[])}
-                            placeholder="Escolha os dias"
-                            className="form-select"
-                        />
-                        <Button variant="primary" onClick={addDay}>Adicionar Dias</Button>
-                        <Button variant="success" onClick={openSaveModal}>
-                            <span className="d-none d-md-block">Salvar</span>
-                            <i className="bi bi-save d-md-none"></i>
-                        </Button>
-                        {!isAndroidDevice && (
-                            <Button variant="secondary" onClick={printPDF}>
-                                <span className="d-none d-md-block">Imprimir</span>
-                                <i className="bi bi-printer d-md-none"></i>
-                            </Button>
+                    {days.length === 0 && (
+                        <div className="alert alert-info" role="alert">
+                            Nenhum dia adicionado. Clique no botão "Adicionar Dias" para incluir um.
+                        </div>
+                    )}
+
+                    <div className="row sticky-top  bg-white p-2 shadow-sm">
+                        <div className="col-12">
+                            <InputGroup>
+                                <InputGroup.Text className="d-none d-md-block">Dias da semana</InputGroup.Text>
+                                <Select
+                                    isMulti
+                                    options={dayOptions}
+                                    value={dayOptions.filter(option => selectedDays.includes(option.value))}
+                                    onChange={newValue => handleDaysChange(newValue as Option[])}
+                                    placeholder="Escolha os dias"
+                                    className="form-select"
+                                />
+                                <Button variant="primary" onClick={addDay}>Adicionar Dias</Button>
+                                <Button variant="success" onClick={openSaveModal}>
+                                    <span className="d-none d-md-block">Salvar</span>
+                                    <i className="bi bi-save d-md-none"></i>
+                                </Button>
+                                {!isAndroidDevice && (
+                                    <Button variant="secondary" onClick={printPDF}>
+                                        <span className="d-none d-md-block">Imprimir</span>
+                                        <i className="bi bi-printer d-md-none"></i>
+                                    </Button>
+                                )}
+                                {isAndroidDevice && (
+                                    <Button variant="secondary" onClick={downloadPDF}>
+                                        <span className="d-none d-md-block">Baixar PDF</span>
+                                        <i className="bi bi-download d-md-none"></i>
+                                    </Button>
+                                )}
+                            </InputGroup>
+                        </div>
+                    </div>
+                </Tab>
+                <Tab eventKey="opcionais" title="Atividades Opcionais">
+                    <Row className='mb-3'>
+                        <Col lg={10} md={8} sm={8} xs={6}>
+                            <h2>Atividades opcionais</h2>
+                        </Col>
+                        <Col lg={2} md={4} sm={4} xs={6}>
+                            <InputGroup>
+                                <Button variant="primary" onClick={addNewOption}>
+                                    Adicionar atividade
+                                </Button>
+                            </InputGroup>
+                        </Col>
+                    </Row>
+                    <Row className='mb-3'>
+                        {workoutOptionsState.map((option, index) => (
+                            <OptionalWorkoutField
+                                key={index}
+                                option={option}
+                                index={index}
+                                dayOptions={dayOptions}
+                                onAddWorkout={addOptionWorkout}
+                                onRemove={removeOption}
+                                onChange={handleWorkoutOptionsChange}
+                            >
+                                {option.workouts.map((workout, workoutIndex) => (
+                                    <WorkoutField
+                                        key={workoutIndex}
+                                        workout={workout}
+                                        index={workoutIndex}
+                                        isOption={true}
+                                        id={option.id}
+                                        onRemove={removeOptionWorkout}
+                                        onChange={handleOptionWorkoutChange}
+                                    />
+                                ))}
+                            </OptionalWorkoutField>
+                        ))}
+
+                        {workoutOptionsState.length === 0 && (
+                            <div className="alert alert-info" role="alert">
+                                Nenhuma atividade opcional adicionada. Clique no botão "Adicionar atividade" para incluir uma.
+                            </div>
                         )}
-                        {isAndroidDevice && (
-                            <Button variant="secondary" onClick={downloadPDF}>
-                                <span className="d-none d-md-block">Baixar PDF</span>
-                                <i className="bi bi-download d-md-none"></i>
-                            </Button>
-                        )}
-                    </InputGroup>
-                </div>
-            </div>
+                    </Row>
+                </Tab>
+            </Tabs>
+
+
 
             <Modal show={showModal} onHide={closeSaveModal}>
                 <Modal.Header closeButton>
