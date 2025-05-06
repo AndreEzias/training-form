@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import InputGroup from 'react-bootstrap/InputGroup';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { Button, Container, FloatingLabel, Form, FormControl, Row, Stack, Modal } from "react-bootstrap";
-import { Card, CloseButton } from "react-bootstrap";
 import { Col } from "react-bootstrap";
 import { buildPDF, saveDocAndroid, saveWeb } from '@/services/GeneratePDF';
 import { Day, Workout, WorkoutOption } from '@/types/workout.types';
-import ToggleField from './toggle-switch/ToggleField';
 import Select from 'react-select';
-import { v4 as uuid } from 'uuid';
 import WorkoutField from './WorkoutField';
+import OptionalWorkoutField from './OptionalWorkoutField';
+import DayWorkoutField from './DayWorkoutField';
 
 interface WorkoutFormProps {
     workoutData?: {
@@ -35,11 +34,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
     const dayOptions = [
         { value: "Domingo", label: "Domingo" },
         { value: "Segunda-feira", label: "Segunda-feira" },
-        { value: "TerÃ§a-feira", label: "TerÃ§a-feira" },
+        { value: "Terça-feira", label: "Terça-feira" },
         { value: "Quarta-feira", label: "Quarta-feira" },
         { value: "Quinta-feira", label: "Quinta-feira" },
         { value: "Sexta-feira", label: "Sexta-feira" },
-        { value: "SÃ¡bado", label: "SÃ¡bado" },
+        { value: "Sábado", label: "Sábado" },
     ];
 
     useEffect(() => {
@@ -255,80 +254,32 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
             </Row>
             <Row className='mb-3'>
                 {workoutOptionsState.map((option, index) => (
-                    <Card key={index} className="p-2 mb-2">
-                        <Card.Header>
-                            <Row className="align-items-center gy-2">
-                                <Col xs={12} lg={3}>
-                                    <FloatingLabel label="Tipo de treino">
-                                        <Form.Select
-                                            value={option.tipoTreino}
-                                            size='sm'
-                                            onChange={(e) => handleWorkoutOptionsChange(index, 'tipoTreino', e.target.value)}
-                                        >
-                                            <option value="">Selecione</option>
-                                            <option value="mobilidade">Mobilidade</option>
-                                            <option value="aquecimento-inicial">Aquecimento Inicial</option>
-                                            <option value="aquecimento-pos-treino">Aquecimento pós treino</option>
-                                            <option value="alongamento">Alongamento</option>
-                                            <option value="cardio">Cardio</option>
-                                            <option value="pre-ativacao">Pré-ativação</option>
-                                        </Form.Select>
-                                    </FloatingLabel>
-                                </Col>
-                                <Col xs={12} lg={6}>
-                                    <Select
-                                        isMulti
-                                        options={dayOptions}
-                                        value={dayOptions.filter(option => workoutOptionsState[index].diasDaSemana.includes(option.value))}
-                                        onChange={(selectedOptions) => handleWorkoutOptionsChange(index, 'diasDaSemana', selectedOptions.map((option: Option) => option.value))}
-                                        placeholder="Escolha os dias"
-                                        className="form-select"
-                                    />
-                                </Col>
-                                <Col xs={10} sm={9} lg={2}>
-                                    <Button className="w-100" size='sm' variant="success" onClick={() => addOptionWorkout(option.id)}>
-                                        <span>Adicionar treino</span>
-                                    </Button>
-                                </Col>
-                                <Col xs={2} sm={3} lg={1} className="text-end">
-                                    <CloseButton onClick={() => removeOption(index)} />
-                                </Col>
-                            </Row>
-                        </Card.Header>
-                        <Card.Body>
-                            <Row id={uuid()} >
-                                {option.workouts.map((workout, workoutIndex) => (
-                                    <WorkoutField
-                                        key={workoutIndex}
-                                        workout={workout}
-                                        index={workoutIndex}
-                                        isOption={true}
-                                        id={option.id}
-                                        onRemove={removeOptionWorkout}
-                                        onChange={handleOptionWorkoutChange}
-                                    />
-                                ))}
-                            </Row>
-                        </Card.Body>
-                        <Card.Footer>
-                            {option.workouts.length > 1 && (
-                                <Row className='justify-content-end'>
-                                    <Col
-                                        xs={12} sm={12} md={12} lg={2}
-                                        className="d-flex justify-content-end">
-                                        <Button className="w-100" size='sm' variant="success" onClick={() => addOptionWorkout(option.id)}>
-                                            <span>Adicionar treino</span>
-                                        </Button>
-                                    </Col>
-                                </Row>
-                            )}
-                        </Card.Footer>
-                    </Card>
+                    <OptionalWorkoutField
+                        key={index}
+                        option={option}
+                        index={index}
+                        dayOptions={dayOptions}
+                        onAddWorkout={addOptionWorkout}
+                        onRemove={removeOption}
+                        onChange={handleWorkoutOptionsChange}
+                    >
+                        {option.workouts.map((workout, workoutIndex) => (
+                            <WorkoutField
+                                key={workoutIndex}
+                                workout={workout}
+                                index={workoutIndex}
+                                isOption={true}
+                                id={option.id}
+                                onRemove={removeOptionWorkout}
+                                onChange={handleOptionWorkoutChange}
+                            />
+                        ))}
+                    </OptionalWorkoutField>
                 ))}
 
                 {workoutOptionsState.length === 0 && (
                     <div className="alert alert-info" role="alert">
-                        Nenhuma atividade opcional adicionada. Clique no botÃ£o "Adicionar atividade" para incluir uma.
+                        Nenhuma atividade opcional adicionada. Clique no botão "Adicionar atividade" para incluir uma.
                     </div>
                 )}
             </Row>
@@ -339,50 +290,24 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
             </Row>
 
             {days.map(day => (
-                <Card key={day.id} className="mb-4 mt-3">
-                    <Card.Header>
-                        <Stack direction="horizontal" gap={3}>
-                            <Card.Title className="flex-grow-1">{day.name.split(',').map(e => {
-                                const dayName = e.trim();
-                                return (
-                                    <span key={dayName} className="badge bg-primary me-1">
-                                        {dayName}
-                                    </span>
-                                );
-                            })}</Card.Title>
-                            <FormControl
-                                placeholder="Label"
-                                value={day.label}
-                                onChange={(e) => handleDayLabelChange(day.id, e.target.value)}
-                            />
-                            <Button size='sm' className='ms-auto' variant="success" onClick={() => addWorkout(day.id)}>
-                                <span className='d-none d-md-block'>Adicionar Treino</span>
-                                <i className="bi bi-plus d-md-none"></i>
-                            </Button>
-                            <div className="vr" />
-                            <CloseButton onClick={() => removeDay(day.id)} />
-                        </Stack>
-                    </Card.Header>
-                    <Card.Body>
-                        <Form>
-                            <Row className=''>
-                                {day.workouts.map((workout, index) => (
-                                    <WorkoutField
-                                        key={index}
-                                        workout={workout}
-                                        index={index}
-                                        id={day.id}
-                                        onRemove={removeWorkout}
-                                        onChange={handleWorkoutChange}
-                                    />
-                                ))}
-                            </Row>
-                            {day.workouts.length > 0 && (
-                                <Button size='sm' variant="success" onClick={() => addWorkout(day.id)}>Adicionar Treino</Button>
-                            )}
-                        </Form>
-                    </Card.Body>
-                </Card>
+                <DayWorkoutField 
+                    key={day.id}
+                    day={day}
+                    onLabelChange={handleDayLabelChange}
+                    onAddWorkout={addWorkout}
+                    onRemove={removeDay}
+                >
+                    {day.workouts.map((workout, index) => (
+                        <WorkoutField
+                            key={index}
+                            workout={workout}
+                            index={index}
+                            id={day.id}
+                            onRemove={removeWorkout}
+                            onChange={handleWorkoutChange}
+                        />
+                    ))}
+                </DayWorkoutField>
             ))}
 
             <div className="row sticky-top  bg-white p-2 shadow-sm">
