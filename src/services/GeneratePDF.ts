@@ -35,6 +35,31 @@ const setMarginPage = (doc: jsPDF) => {
     doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
 }
 
+// Função para quebrar texto em múltiplas linhas
+const splitTextToLines = (doc: jsPDF, text: string, maxWidth: number): string[] => {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    words.forEach(word => {
+        const testLine = currentLine ? currentLine + ' ' + word : word;
+        const testWidth = doc.getTextWidth(testLine);
+
+        if (testWidth > maxWidth) {
+            lines.push(currentLine);
+            currentLine = word;
+        } else {
+            currentLine = testLine;
+        }
+    });
+
+    if (currentLine) {
+        lines.push(currentLine);
+    }
+
+    return lines;
+};
+
 export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
     const doc = new jsPDF({ format: 'a4', orientation: 'portrait' });
     const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
@@ -53,45 +78,62 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
         align: 'center',
     });
 
-    const positionRight = pageWidth / 10;
-    const positionLeft = pageWidth / 3;
+    const positionRight = pageWidth / 3;
+    const positionLeft = pageWidth / 10;
 
     if (workoutOptions.length > 0) {
         linePosition += 10;
         doc.setFontSize(20);
         doc.setFont(fontDefault, "italic");
-        doc.text('Exercícios Complementares', positionRight, linePosition);
+        doc.text('Exercícios Complementares', positionLeft, linePosition);
     }
 
     // Adiciona os treinos opcionais
     workoutOptions.forEach((option) => {
-        linePosition += 10;
-        doc.setFontSize(14);
-        doc.setFont(fontDefault, "bold");
-        doc.text(`${option.tipoTreino.toUpperCase()}`, positionRight, linePosition);
 
-        const options = [
-            { label: 'Dias da Semana', value: option.diasDaSemana.join(', ') },
-            { label: 'Séries', value: option.serie },
-            { label: 'Repetições', value: option.repeticao },
-            { label: 'Como fazer?', value: option.link }
-        ]
+        if (option.tipoTreino) {
+            linePosition += 10;
+            doc.setFontSize(14);
+            doc.setFont(fontDefault, "bold");
+            doc.text(`${option.tipoTreino.toUpperCase()}`, positionLeft, linePosition);
+        }
 
-        doc.setFontSize(10);
-        options.forEach(element => {
-            if (!element.value) return;
+        // dia da semana
+        linePosition += 5;
+        doc.setFontSize(12);
+        doc.setFont(fontDefault, "italic");
+        doc.setTextColor(135, 50, 134); // Define a cor do texto para #873286
+        doc.text(option.diasDaSemana.join(', '), positionLeft, linePosition);
+        doc.setTextColor(0, 0, 0); // Reseta a cor do texto para preto
+
+        option.workouts.forEach((workout) => {
+            if (workout.aparelho === '') return;
             linePosition += 5;
-            doc.setFont("helvetica", "bold");
-            doc.text(`${element.label}:`, positionRight, linePosition)
-            doc.setFont("helvetica", "normal");
-            doc.text(`${element.value}`, positionLeft, linePosition);
-        });
+            doc.setFontSize(12);
+            doc.setFont(fontDefault, "normal");
+            const pausaText = workout.pausa > 0 ? `e ${workout.pausa} ${workout.unidadeTempo} de pausa` : '';
+            const serieRepeticaoText = workout.repeticao > 0 ? `, ${workout.serie} x ${workout.repeticao} ${pausaText}` : '';
+            let obsText = workout.complemento ? `${workout.complemento}.` : '';
 
-        linePosition += 10;
-        doc.setDrawColor(135, 50, 134); // Define a cor da linha para #873286
-        doc.setLineWidth(0.5); // Aumenta a espessura da linha
-        doc.line(10, linePosition, pageWidth - 10, linePosition);
+            // Montar o texto completo
+            const fullText = `${workout.aparelho} ${serieRepeticaoText}. ${obsText}`;
+
+            // Calcular a largura máxima disponível (considerando margens)
+            const maxWidth = pageWidth - (positionLeft * 2);
+
+            // Quebrar o texto em linhas se for maior que a largura disponível
+            const lines = splitTextToLines(doc, fullText, maxWidth);
+
+            // Exibir cada linha, incrementando a posição vertical a cada linha
+            lines.forEach((line, index) => {
+                if (index > 0) linePosition += 5; // Incrementa posição apenas para linhas adicionais
+                doc.text(line, positionLeft, linePosition);
+            });
+        })
     });
+
+    linePosition += 10;
+    doc.line(10, linePosition, pageWidth - 10, linePosition);
 
     linePosition += 10;
     doc.setFontSize(20);
@@ -99,7 +141,6 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
     doc.text('Treino', pageWidth / 2, linePosition, {
         align: 'center',
     });
-
 
     linePosition += 10;
     doc.setFontSize(18);
@@ -114,7 +155,7 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
             setMarginPage(doc);
         }
 
-       
+
         doc.text(`${day.name}`, positionRight, linePosition);
         linePosition += 10;
         const tableData = day.workouts.map(workout => {
@@ -147,14 +188,14 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
                     const videoIcon = new Image();
                     videoIcon.src = '/play.png'; // Caminho para o ícone de vídeo
                     doc.addImage(videoIcon, 'PNG', data.cell.x + 2, data.cell.y + 2, 5, 5); // Adiciona o ícone
-                    doc.link(data.cell.x + 2, data.cell.y + 2, 5, 5, { 
-                        url: (data.cell.raw as CellWithLink).link, target: '_blank' 
+                    doc.link(data.cell.x + 2, data.cell.y + 2, 5, 5, {
+                        url: (data.cell.raw as CellWithLink).link, target: '_blank'
                     }); // Abre o link em outra aba
                 }
             }
         });
 
-        linePosition +=  nextHeight;
+        linePosition += nextHeight;
     });
     return doc;
 }
