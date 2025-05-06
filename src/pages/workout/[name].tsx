@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import WorkoutForm from '../../components/WorkoutForm';
 import Header from "@/components/Header";
-import {Container} from "react-bootstrap";
+import { Container, Row, Col, Button } from "react-bootstrap";
+import { userAgent } from 'next/server';
 
 const WorkoutPage: React.FC = () => {
     const router = useRouter();
@@ -25,11 +26,15 @@ const WorkoutPage: React.FC = () => {
             ) : (
                 <>
                     <Container>
-                        <h1 className="mt-2">{name}</h1>
+                        <Row>
+                            <Col>
+                                <h1 className="mt-2">{name}</h1>
+                            </Col>
+                        </Row>
                     </Container>
                     <WorkoutForm
-                        workoutNameProp={name} 
-                        workoutData={workoutData} 
+                        workoutNameProp={name}
+                        workoutData={workoutData}
                     />
                 </>
             )}

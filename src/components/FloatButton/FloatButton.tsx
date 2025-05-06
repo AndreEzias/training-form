@@ -8,6 +8,7 @@ interface FloatButtonProps {
   color?: string;
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
+  order?: number; // Nova propriedade para controlar a ordem dos bot�es
 }
 
 const FloatButton: React.FC<FloatButtonProps> = ({
@@ -16,15 +17,18 @@ const FloatButton: React.FC<FloatButtonProps> = ({
   backgroundColor = '#007bff',
   color = 'white',
   size = 'medium',
-  disabled = false
+  disabled = false,
+  order = 0 // Valor padrão para order
 }) => {
   const sizeMap = {
-    small: '40px',
-    medium: '56px',
-    large: '64px'
+    small: 40,
+    medium: 56,
+    large: 64
   };
 
   const buttonSize = sizeMap[size];
+
+  const topOffset = order > 0 ? (order * buttonSize) - 20  : 0;
 
   return (
     <button
@@ -34,8 +38,9 @@ const FloatButton: React.FC<FloatButtonProps> = ({
       style={{
         backgroundColor,
         color,
-        width: buttonSize,
-        height: buttonSize
+        width: `${buttonSize}px`,
+        height: `${buttonSize}px`,
+        bottom: `${topOffset}px`
       }}
     >
       {children}

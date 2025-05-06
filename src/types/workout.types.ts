@@ -6,6 +6,7 @@ export interface Workout {
     pausa: number;
     unidadeTempo: string; // Novo campo adicionado
     assistir: string;
+    videos: string[];
 }
 
 export interface Day {

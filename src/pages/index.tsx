@@ -1,7 +1,7 @@
 // pages/index.tsx
 import Header from '../components/Header';
 import WorkoutForm from '../components/WorkoutForm';
-import { Container } from 'react-bootstrap';
+import { Button, Col, Container, Row } from 'react-bootstrap';
 
 const Home: React.FC = () => {
   return (
@@ -9,7 +9,11 @@ const Home: React.FC = () => {
       <Header />
       <main>
         <Container>
-          <h1 className="mt-2">Novo Treino</h1>
+          <Row>
+            <Col>
+              <h1 className="mt-2">Novo Treino</h1>
+            </Col>
+          </Row>
           {/* horizontal divider */}
           <hr className="my-4" />
         </Container>

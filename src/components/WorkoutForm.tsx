@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import InputGroup from 'react-bootstrap/InputGroup';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import { Button, Container, FloatingLabel, Form, FormControl, Row, Stack, Modal, Tab, Tabs } from "react-bootstrap";
+import { Button, Container, FormControl, Row, Modal, Tab, Tabs, ButtonGroup } from "react-bootstrap";
 import { Col } from "react-bootstrap";
 import { buildPDF, saveDocAndroid, saveWeb } from '@/services/GeneratePDF';
 import { Day, Workout, WorkoutOption } from '@/types/workout.types';
@@ -105,7 +105,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                     complemento: '',
                     pausa: 0,
                     unidadeTempo: 'seg',
-                    assistir: ''
+                    assistir: '',
+                    videos: []
                 }]
             } : day
         ));
@@ -122,7 +123,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                     complemento: '',
                     pausa: 0,
                     unidadeTempo: 'seg',
-                    assistir: ''
+                    assistir: '',
+                    videos: []
                 }]
             } : option
         ));
@@ -239,6 +241,36 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
 
     const closeSaveModal = () => setShowModal(false);
 
+    const renderPdfPreview = useCallback(() => {
+        if (activeTab !== 'preview' || days.length === 0) return;
+
+        const doc = buildPDF(days, workoutOptionsState);
+        const pdfPreviewContainer = document.getElementById('pdf-preview');
+        const pageHeight = window.innerHeight - 100;
+        // adiciona nome ao pdf
+        doc.setProperties({
+            title: `Treino ${workoutName}`,
+            subject: `Treino ${workoutName}`,
+        });
+
+        if (pdfPreviewContainer) {
+            pdfPreviewContainer.innerHTML = ''; // Limpa o conteúdo anterior
+            const pdfDataUri = doc.output('datauristring');
+            const iframe = document.createElement('iframe');
+            iframe.src = pdfDataUri;
+            iframe.width = '100%';
+            iframe.height = `${pageHeight}px`; // Ajuste a altura conforme necessário
+
+            pdfPreviewContainer.appendChild(iframe);
+        }
+    }, [activeTab, days, workoutOptionsState, workoutName]);
+
+    useEffect(() => {
+        if (activeTab === 'preview') {
+            renderPdfPreview();
+        }
+    }, [activeTab, renderPdfPreview]);
+
     return (
         <Container className="container mt-4">
             <Tabs
@@ -248,9 +280,24 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                 className="mb-3"
             >
                 <Tab eventKey="treinos" title="Treinos">
-                    <Row>
-                        <Col>
+                    <Row className='mb-3'>
+                        <Col lg={2} md={8} sm={8} xs={12}>
                             <h2>Treinos</h2>
+                        </Col>
+                        <Col lg={8} md={4} sm={4} xs={8}>
+                            <Select
+                                isMulti
+                                options={dayOptions}
+                                value={dayOptions.filter(option => selectedDays.includes(option.value))}
+                                onChange={newValue => handleDaysChange(newValue as Option[])}
+                                placeholder="Escolha os dias"
+                                classNamePrefix="select"
+                            />
+                        </Col>
+                        <Col lg={2} md={12} sm={12} xs={2}>
+                            <Button variant="primary" onClick={addDay} >
+                                Adicionar Dias
+                            </Button>
                         </Col>
                     </Row>
 
@@ -280,39 +327,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                             Nenhum dia adicionado. Clique no botão "Adicionar Dias" para incluir um.
                         </div>
                     )}
-
-                    <div className="row sticky-top  bg-white p-2 shadow-sm">
-                        <div className="col-12">
-                            <InputGroup>
-                                <InputGroup.Text className="d-none d-md-block">Dias da semana</InputGroup.Text>
-                                <Select
-                                    isMulti
-                                    options={dayOptions}
-                                    value={dayOptions.filter(option => selectedDays.includes(option.value))}
-                                    onChange={newValue => handleDaysChange(newValue as Option[])}
-                                    placeholder="Escolha os dias"
-                                    className="form-select"
-                                />
-                                <Button variant="primary" onClick={addDay}>Adicionar Dias</Button>
-                                <Button variant="success" onClick={openSaveModal}>
-                                    <span className="d-none d-md-block">Salvar</span>
-                                    <i className="bi bi-save d-md-none"></i>
-                                </Button>
-                                {!isAndroidDevice && (
-                                    <Button variant="secondary" onClick={printPDF}>
-                                        <span className="d-none d-md-block">Imprimir</span>
-                                        <i className="bi bi-printer d-md-none"></i>
-                                    </Button>
-                                )}
-                                {isAndroidDevice && (
-                                    <Button variant="secondary" onClick={downloadPDF}>
-                                        <span className="d-none d-md-block">Baixar PDF</span>
-                                        <i className="bi bi-download d-md-none"></i>
-                                    </Button>
-                                )}
-                            </InputGroup>
-                        </div>
-                    </div>
                 </Tab>
                 <Tab eventKey="opcionais" title="Atividades Opcionais">
                     <Row className='mb-3'>
@@ -359,9 +373,59 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                         )}
                     </Row>
                 </Tab>
+                <Tab eventKey="preview" title="Preview">
+                    <Row>
+                        <Col lg={10} md={10} sm={10} xs={8}>
+                            <h2>Preview</h2>
+                        </Col>
+                        <Col lg={2} md={2} sm={2} xs={4}>
+                            <ButtonGroup>
+                                <Button
+                                    onClick={openSaveModal}
+                                    variant="success"
+                                >
+                                    <span className="d-none d-md-block">Salvar</span>
+                                    <i className="bi bi-save d-md-none "></i>
+                                </Button>
+
+                                {!isAndroidDevice && (
+                                    <Button
+                                        onClick={printPDF}
+                                        variant='secondary'
+                                    >
+                                        <span className="d-none d-md-block">Imprimir</span>
+                                        <i className="bi bi-printer d-md-none"></i>
+                                    </Button>
+                                )}
+
+                                {isAndroidDevice && (
+                                    <Button
+                                        onClick={downloadPDF}
+                                        variant='secondary'
+                                    >
+                                        <span className="d-none d-md-block">Baixar PDF</span>
+                                        <i className="bi bi-download d-md-none"></i>
+                                    </Button>
+                                )}
+                            </ButtonGroup>
+                        </Col>
+                    </Row>
+                    {/* preview pdf */}
+                    <Row>
+                        <Row>
+                            <Col>
+                                <div id='pdf-preview' className="pt-4 w-100">
+                                    {activeTab !== 'preview' && (
+                                        <div className="alert alert-info">
+                                            Selecione a aba Preview para visualizar o PDF
+                                        </div>
+                                    )}
+                                </div>
+                            </Col>
+                        </Row>
+                    </Row>
+                </Tab>
             </Tabs>
-
-
 
             <Modal show={showModal} onHide={closeSaveModal}>
                 <Modal.Header closeButton>

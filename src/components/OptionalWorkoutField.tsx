@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, Row, Col, FloatingLabel, Form, Button, CloseButton } from "react-bootstrap";
 import Select from 'react-select';
 import { v4 as uuid } from 'uuid';
-import { Workout, WorkoutOption } from '@/types/workout.types';
+import {  WorkoutOption } from '@/types/workout.types';
 
 interface Option {
     value: string;
@@ -32,39 +32,43 @@ const OptionalWorkoutField: React.FC<OptionalWorkoutFieldProps> = ({
         <Card className="p-2 mb-2">
             <Card.Header>
                 <Row className="align-items-center gy-2">
-                    <Col xs={12} lg={3}>
-                        <FloatingLabel label="Tipo de treino">
-                            <Form.Select
-                                value={option.tipoTreino}
-                                size='sm'
-                                onChange={(e) => onChange(index, 'tipoTreino', e.target.value)}
-                            >
-                                <option value="">Selecione</option>
-                                <option value="mobilidade">Mobilidade</option>
-                                <option value="aquecimento-inicial">Aquecimento Inicial</option>
-                                <option value="aquecimento-pos-treino">Aquecimento pós treino</option>
-                                <option value="alongamento">Alongamento</option>
-                                <option value="cardio">Cardio</option>
-                                <option value="pre-ativacao">Pré-ativação</option>
-                            </Form.Select>
-                        </FloatingLabel>
+                    <Col xs={12} md={4} lg={3}>
+                        <Form.Label htmlFor={`titulo-${index}`} className="mb-0">
+                            Tipo do treino
+                        </Form.Label>
+                        <Form.Select
+                            value={option.tipoTreino}
+                            onChange={(e) => onChange(index, 'tipoTreino', e.target.value)}
+                        >
+                            <option value="">Tipo de treino</option>
+                            <option value="mobilidade">Mobilidade</option>
+                            <option value="aquecimento-inicial">Aquecimento Inicial</option>
+                            <option value="aquecimento-pos-treino">Aquecimento pós treino</option>
+                            <option value="alongamento">Alongamento</option>
+                            <option value="cardio">Cardio</option>
+                            <option value="pre-ativacao">Pré-ativação</option>
+                        </Form.Select>
                     </Col>
-                    <Col xs={12} lg={6}>
+                    <Col xs={12} md={5} lg={6}>
+                        <Form.Label htmlFor={`dias-${index}`} className="mb-0">
+                            Dias da semana
+                        </Form.Label>
                         <Select
                             isMulti
                             options={dayOptions}
                             value={dayOptions.filter(opt => option.diasDaSemana.includes(opt.value))}
                             onChange={(selectedOptions) => onChange(index, 'diasDaSemana', selectedOptions.map((opt: Option) => opt.value))}
                             placeholder="Escolha os dias"
-                            className="form-select"
+                            className="react-select-container"
+                            classNamePrefix="react-select"
                         />
                     </Col>
-                    <Col xs={10} sm={9} lg={2}>
+                    <Col xs={10} md={2} sm={9} lg={2}>
                         <Button className="w-100" size='sm' variant="success" onClick={() => onAddWorkout(option.id)}>
                             <span>Adicionar treino</span>
                         </Button>
                     </Col>
-                    <Col xs={2} sm={3} lg={1} className="text-end">
+                    <Col xs={2} sm={3} md={1} lg={1} className="text-end">
                         <CloseButton onClick={() => onRemove(index)} />
                     </Col>
                 </Row>
