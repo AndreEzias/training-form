@@ -1,7 +1,7 @@
 export interface Workout {
     aparelho: string;
     serie: number;
-    repeticao: number;
+    repeticao: string;
     complemento: string; // Alterado de repeticaoExtra para complemento
     pausa: number;
     unidadeTempo: string; // Novo campo adicionado

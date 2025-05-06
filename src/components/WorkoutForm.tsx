@@ -101,7 +101,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                 workouts: [...day.workouts, {
                     aparelho: '',
                     serie: 0,
-                    repeticao: 0,
+                    repeticao: '',
                     complemento: '',
                     pausa: 0,
                     unidadeTempo: 'seg',
@@ -119,7 +119,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                 workouts: [...option.workouts, {
                     aparelho: '',
                     serie: 0,
-                    repeticao: 0,
+                    repeticao: '',
                     complemento: '',
                     pausa: 0,
                     unidadeTempo: 'seg',
@@ -328,6 +328,27 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                             Nenhum dia adicionado. Clique no botão "Adicionar Dias" para incluir um.
                         </div>
                     )}
+
+                    {days.length > 0 && (
+                        <Row className='justify-content-end'>
+                            <Col lg={7} md={6} sm={8} xs={10}>
+                            <Select
+                                isMulti
+                                options={dayOptions}
+                                value={dayOptions.filter(option => selectedDays.includes(option.value))}
+                                onChange={newValue => handleDaysChange(newValue as Option[])}
+                                placeholder="Escolha os dias"
+                                classNamePrefix="select"
+                            />
+                        </Col>
+                        <Col lg={3} md={3} sm={1} xs={1}>
+                            <Button variant="primary" onClick={addDay} >
+                                <span className="d-none d-md-block">Adicionar Treino</span>
+                                <i className="bi bi-plus-circle d-md-none"></i>
+                            </Button>
+                        </Col>
+                        </Row>
+                    )}
                 </Tab>
                 <Tab eventKey="opcionais" title="Atividades Opcionais">
                     <Row className='mb-3'>
@@ -369,6 +390,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                             <div className="alert alert-info" role="alert">
                                 Nenhuma atividade opcional adicionada. Clique no botão "Adicionar atividade" para incluir uma.
                             </div>
+                        )}
+
+                        {workoutOptionsState.length > 0 && (
+                            <Row className='justify-content-end'>
+                                <Col lg={3} md={4} sm={5} xs={6}>
+                                    <Button variant="primary" onClick={addNewOption} className='w-100'>
+                                        Adicionar atividade
+                                    </Button>
+                                </Col>
+                            </Row>
                         )}
                     </Row>
                 </Tab>

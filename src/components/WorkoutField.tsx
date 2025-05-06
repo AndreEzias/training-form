@@ -1,7 +1,8 @@
 import React from "react";
-import { Card, Col, Row, CloseButton, FloatingLabel, Form, InputGroup, Stack } from "react-bootstrap";
+import { Card, Col, Row, CloseButton, FloatingLabel, Form, InputGroup, Stack, Button } from "react-bootstrap";
 import ToggleField from './toggle-switch/ToggleField';
 import { Workout } from '@/types/workout.types';
+import { v4 as uuid } from 'uuid';
 
 interface WorkoutFieldProps {
     workout: Workout;
@@ -24,11 +25,11 @@ const WorkoutField: React.FC<WorkoutFieldProps> = ({
         <Card className="p-2 mb-2">
             <Card.Header>
                 <Stack direction="horizontal" gap={2}>
-                    <FloatingLabel label="Aparelho" className="w-100">
+                    <FloatingLabel label="Exercício" className="w-100">
                         <Form.Control
                             type="text"
                             as="textarea"
-                            placeholder="Aparelho"
+                            placeholder="Exercício"
                             value={workout.aparelho}
                             size='sm'
                             onChange={(e) => onChange(id, index, 'aparelho', e.target.value)}
@@ -59,7 +60,7 @@ const WorkoutField: React.FC<WorkoutFieldProps> = ({
                             <Col md={2} sm={2} xs={6}>
                                 <FloatingLabel label="Repetir">
                                     <Form.Control
-                                        type="number"
+                                        type="text"
                                         size='sm'
                                         placeholder="Repetições"
                                         value={workout.repeticao}
@@ -105,7 +106,7 @@ const WorkoutField: React.FC<WorkoutFieldProps> = ({
                         </InputGroup>
                     </Col>
 
-                    <Col lg={3} md={6} sm={6} xs={12} >
+                    {!isOption && (<Col lg={3} md={6} sm={6} xs={12} >
                         <FloatingLabel label="Assistir">
                             <Form.Control
                                 type="text"
@@ -115,7 +116,56 @@ const WorkoutField: React.FC<WorkoutFieldProps> = ({
                                 onChange={(e) => onChange(id, index, 'assistir', e.target.value)}
                             />
                         </FloatingLabel>
-                    </Col>
+                    </Col>)}
+
+                    {isOption && (
+                        <>
+                            <Col lg={3} md={6} sm={6} xs={12}>
+                                <InputGroup>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Vídeo"
+                                        id={`video-${index}-${id}-${uuid}`}
+                                    />
+                                    <Button
+                                        variant="outline-secondary"
+                                        size='sm'
+                                        onClick={() => {
+                                            // pega o valor do input acima e inclui na lista de vídeos
+                                            const videoInput = document.getElementById(`video-${index}-${id}-${uuid}`) as HTMLInputElement;
+                                            const videoValue = videoInput.value;
+                                            if (videoValue) {
+                                                onChange(id, index, 'videos', [...workout.videos, videoValue]);
+                                                videoInput.value = ''; // Limpa o campo após adicionar
+                                            }
+                                        }}
+                                    >
+                                        <i className="bi bi-plus"></i>
+                                    </Button>
+                                </InputGroup>
+                            </Col>
+                            {workout.videos.length > 0 && (<Col>
+                                <span>Vídeos</span>
+                                <ul className="list-group">
+                                    {workout.videos.map((video, videoIndex) => (
+                                        <li key={videoIndex} className="list-group-item d-flex justify-content-between align-items-center">
+                                            {video}
+                                            <Button
+                                                variant="outline-danger"
+                                                size='sm'
+                                                onClick={() => {
+                                                    const updatedVideos = workout.videos.filter((_, index) => index !== videoIndex);
+                                                    onChange(id, index, 'videos', updatedVideos);
+                                                }}
+                                            >
+                                                <i className="bi bi-x"></i>
+                                            </Button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Col>)}
+                        </>
+                    )}
                 </Row>
             </Card.Body>
         </Card>

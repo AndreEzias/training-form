@@ -40,13 +40,14 @@ const OptionalWorkoutField: React.FC<OptionalWorkoutFieldProps> = ({
                             value={option.tipoTreino}
                             onChange={(e) => onChange(index, 'tipoTreino', e.target.value)}
                         >
-                            <option value="">Tipo de treino</option>
+                            <option value=""> --- </option>
                             <option value="mobilidade">Mobilidade</option>
                             <option value="aquecimento-inicial">Aquecimento Inicial</option>
                             <option value="aquecimento-pos-treino">Aquecimento pós treino</option>
                             <option value="alongamento">Alongamento</option>
                             <option value="cardio">Cardio</option>
                             <option value="pre-ativacao">Pré-ativação</option>
+                            <option value="ativacao">Ativação</option>
                         </Form.Select>
                     </Col>
                     <Col xs={12} md={4} lg={6}>
