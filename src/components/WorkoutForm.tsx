@@ -281,10 +281,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
             >
                 <Tab eventKey="treinos" title="Treinos">
                     <Row className='mb-3'>
-                        <Col lg={2} md={8} sm={8} xs={12}>
+                        <Col lg={2} md={3} sm={3} xs={12}>
                             <h2>Treinos</h2>
                         </Col>
-                        <Col lg={8} md={4} sm={4} xs={8}>
+                        <Col lg={7} md={6} sm={8} xs={10}>
                             <Select
                                 isMulti
                                 options={dayOptions}
@@ -294,9 +294,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                                 classNamePrefix="select"
                             />
                         </Col>
-                        <Col lg={2} md={12} sm={12} xs={2}>
+                        <Col lg={3} md={3} sm={1} xs={1}>
                             <Button variant="primary" onClick={addDay} >
-                                Adicionar Dias
+                                <span className="d-none d-md-block">Adicionar Treino</span>
+                                <i className="bi bi-plus-circle d-md-none"></i>
                             </Button>
                         </Col>
                     </Row>
@@ -330,15 +331,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                 </Tab>
                 <Tab eventKey="opcionais" title="Atividades Opcionais">
                     <Row className='mb-3'>
-                        <Col lg={10} md={8} sm={8} xs={6}>
+                        <Col lg={9} md={8} sm={7} xs={6}>
                             <h2>Atividades opcionais</h2>
                         </Col>
-                        <Col lg={2} md={4} sm={4} xs={6}>
-                            <InputGroup>
-                                <Button variant="primary" onClick={addNewOption}>
-                                    Adicionar atividade
-                                </Button>
-                            </InputGroup>
+                        <Col lg={3} md={4} sm={5} xs={6} className="justify-content-end">
+                            <Button variant="primary" onClick={addNewOption} className='w-100'>
+                                Adicionar atividade
+                            </Button>
                         </Col>
                     </Row>
                     <Row className='mb-3'>

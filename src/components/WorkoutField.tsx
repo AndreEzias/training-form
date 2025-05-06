@@ -71,6 +71,7 @@ const WorkoutField: React.FC<WorkoutFieldProps> = ({
                                 <FloatingLabel label="Complemento">
                                     <Form.Control
                                         type="text"
+                                        as='textarea'
                                         size='sm'
                                         placeholder="Complemento"
                                         value={workout.complemento}

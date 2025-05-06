@@ -63,9 +63,9 @@ const OptionalWorkoutField: React.FC<OptionalWorkoutFieldProps> = ({
                             classNamePrefix="react-select"
                         />
                     </Col>
-                    <Col xs={10} md={2} sm={9} lg={2}>
-                        <Button className="w-100" size='sm' variant="success" onClick={() => onAddWorkout(option.id)}>
-                            <span>Adicionar treino</span>
+                    <Col xs={10} md={2} sm={9} lg={3}>
+                        <Button className="w-100"  variant="success" onClick={() => onAddWorkout(option.id)}>
+                            <span>Adicionar Exercício</span>
                         </Button>
                     </Col>
                     <Col xs={2} sm={3} md={1} lg={1} className="text-end">
@@ -82,10 +82,10 @@ const OptionalWorkoutField: React.FC<OptionalWorkoutFieldProps> = ({
                 {option.workouts.length > 1 && (
                     <Row className='justify-content-end'>
                         <Col
-                            xs={12} sm={12} md={12} lg={2}
+                            xs={12} sm={12} md={12} lg={3}
                             className="d-flex justify-content-end">
-                            <Button className="w-100" size='sm' variant="success" onClick={() => onAddWorkout(option.id)}>
-                                <span>Adicionar treino</span>
+                            <Button className="w-100" variant="success" onClick={() => onAddWorkout(option.id)}>
+                                <span>Adicionar Exercício</span>
                             </Button>
                         </Col>
                     </Row>
