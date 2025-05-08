@@ -10,7 +10,7 @@ interface WorkoutFieldProps {
     isOption?: boolean;
     id: number;
     onRemove: (id: number, index: number) => void;
-    onChange: (id: number, index: number, field: keyof Workout, value: string | number) => void;
+    onChange: (id: number, index: number, field: keyof Workout, value: string | number | string[]) => void;
 }
 
 const WorkoutField: React.FC<WorkoutFieldProps> = ({

@@ -85,7 +85,7 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
         linePosition += 10;
         doc.setFontSize(20);
         doc.setFont(fontDefault, "italic");
-        doc.text('ExercÃ­cios Complementares', positionLeft, linePosition);
+        doc.text('Exercícios Complementares', positionLeft, linePosition);
     }
 
     // Adiciona os treinos opcionais
