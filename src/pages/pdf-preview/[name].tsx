@@ -4,19 +4,29 @@ import { Col, Container, Row } from 'react-bootstrap';
 import Header from '@/components/Header';
 import { buildPDF } from '@/services/GeneratePDF';
 import { Day, WorkoutOption } from '@/types/workout.types';
+import { useWorkoutApi } from '../../hooks/useWorkoutApi';
 
 const PdfPreviewPage: React.FC = () => {
     const router = useRouter();
     const { name } = router.query;
     const [workoutData, setWorkoutData] = useState<{ days: Day[]; workoutOptionals: WorkoutOption[] } | null>(null);
+    const { getWorkout } = useWorkoutApi();
 
-    // Carrega os dados do treino salvo (localStorage, API, etc.)
+    // Carrega os dados do treino salvo do SQLite
     useEffect(() => {
-        if (name) {
-            const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '{}');
-            setWorkoutData(savedWorkouts[name as string] || []);
+        if (name && typeof name === 'string') {
+            const loadWorkout = async () => {
+                const data = await getWorkout(name);
+                if (data) {
+                    setWorkoutData({
+                        days: data.days,
+                        workoutOptionals: data.workoutOptionals || []
+                    });
+                }
+            };
+            loadWorkout();
         }
-    }, [name]);
+    }, [name, getWorkout]);
 
     const renderPdfPreview = useCallback((days: Day[], workoutOptionals: WorkoutOption[]) => {
         const doc = buildPDF(days, workoutOptionals);

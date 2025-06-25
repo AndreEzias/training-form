@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     reactStrictMode: true,
-    output: 'export'
+    // Removido output: 'export' para permitir API routes
 };
 
 export default nextConfig;

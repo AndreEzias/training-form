@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Button, Container, ListGroup, ListGroupItem } from 'react-bootstrap';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Button, Container, ListGroup, ListGroupItem, Alert, Spinner } from 'react-bootstrap';
 import { useRouter } from 'next/router';
+import { useWorkoutApi } from '../hooks/useWorkoutApi';
 
 interface Day {
     id: number;
@@ -19,44 +20,68 @@ interface Workout {
 
 const SavedWorkoutsPage: React.FC = () => {
     const [workoutList, setWorkoutList] = useState<{ [key: string]: Day[] }>({});
-    const router = useRouter(); // Use o hook useRouter do Next.js
+    const router = useRouter();
+    const { loading, error, getAllWorkouts, deleteWorkout } = useWorkoutApi();
 
-    // Carrega os treinos salvos no localStorage
+    // Carrega os treinos salvos do SQLite
+    const loadWorkouts = useCallback(async () => {
+        const savedWorkouts = await getAllWorkouts();
+        // Convertemos os dados para o formato esperado pelo componente
+        const formattedWorkouts: { [key: string]: Day[] } = {};
+        Object.keys(savedWorkouts).forEach(name => {
+            formattedWorkouts[name] = savedWorkouts[name].days;
+        });
+        setWorkoutList(formattedWorkouts);
+    }, [getAllWorkouts]);
+
     useEffect(() => {
-        const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '{}');
-        setWorkoutList(savedWorkouts);
-    }, []);
+        loadWorkouts();
+    }, [loadWorkouts]);
 
     const handleViewWorkout = (workoutName: string) => {
+        console.log('Navegando para treino:', workoutName);
         // Redireciona para a página de visualização/edit com o treino selecionado
-        router.push({
-            pathname: `/workout/${workoutName}`, // Caminho da página onde os treinos serão exibidos
-            query: { name: workoutName },       // Passa o nome do treino como query param
-        });
+        router.push(`/workout/${encodeURIComponent(workoutName)}`);
     };
 
     const handlePdfViewWorkout = (workoutName: string) => {
+        console.log('Navegando para PDF:', workoutName);
         // Redireciona para a página de visualização do PDF com o treino selecionado
-        router.push({
-            pathname: `/pdf-preview/${workoutName}`, // Caminho da página onde o PDF será exibido
-            query: { name: workoutName },            // Passa o nome do treino como query param
-        });
+        router.push(`/pdf-preview/${encodeURIComponent(workoutName)}`);
     };
 
-    const handleDeleteWorkout = (workoutName: string) => {
+    const handleDeleteWorkout = async (workoutName: string) => {
         if (window.confirm(`Deseja realmente excluir a ficha "${workoutName}"?`)) {
-            const updatedWorkouts = { ...workoutList };
-            delete updatedWorkouts[workoutName];
-            localStorage.setItem('workouts', JSON.stringify(updatedWorkouts));
-            setWorkoutList(updatedWorkouts); // Atualiza a lista na interface
-            alert(`Ficha "${workoutName}" removida com sucesso!`);
+            const success = await deleteWorkout(workoutName);
+            if (success) {
+                // Recarrega a lista após exclusão
+                await loadWorkouts();
+                alert(`Ficha "${workoutName}" removida com sucesso!`);
+            } else {
+                alert('Erro ao excluir a ficha. Tente novamente.');
+            }
         }
     };
 
     return (
         <Container className="mt-4">
             <h1 className="mb-4">Treinos Salvos</h1>
-            {Object.keys(workoutList).length === 0 ? (
+            
+            {loading && (
+                <div className="text-center mb-4">
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Carregando...</span>
+                    </Spinner>
+                </div>
+            )}
+            
+            {error && (
+                <Alert variant="danger" className="mb-4">
+                    Erro ao carregar treinos: {error}
+                </Alert>
+            )}
+            
+            {!loading && Object.keys(workoutList).length === 0 ? (
                 <p>Nenhuma ficha de treino foi salva ainda.</p>
             ) : (
                 <ListGroup>
@@ -71,6 +96,7 @@ const SavedWorkoutsPage: React.FC = () => {
                                     variant="primary"
                                     className="me-2"
                                     onClick={() => handleViewWorkout(workoutName)}
+                                    disabled={loading}
                                 >
                                     Editar
                                 </Button>
@@ -78,12 +104,14 @@ const SavedWorkoutsPage: React.FC = () => {
                                     variant="secondary"
                                     className="me-2"
                                     onClick={() => handlePdfViewWorkout(workoutName)}
+                                    disabled={loading}
                                 >
                                     Visualizar PDF
                                 </Button>
                                 <Button
                                     variant="danger"
                                     onClick={() => handleDeleteWorkout(workoutName)}
+                                    disabled={loading}
                                 >
                                     Excluir
                                 </Button>

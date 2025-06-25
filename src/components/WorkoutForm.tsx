@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import InputGroup from 'react-bootstrap/InputGroup';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { Button, Container, FormControl, Row, Modal, Tab, Tabs, ButtonGroup } from "react-bootstrap";
 import { Col } from "react-bootstrap";
@@ -9,6 +8,7 @@ import Select from 'react-select';
 import WorkoutField from './WorkoutField';
 import OptionalWorkoutField from './OptionalWorkoutField';
 import DayWorkoutField from './DayWorkoutField';
+import { useWorkoutApi } from '../hooks/useWorkoutApi';
 
 interface WorkoutFormProps {
     workoutData?: {
@@ -28,9 +28,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [workoutName, setWorkoutName] = useState<string>(typeof workoutNameProp === 'string' ? workoutNameProp : '');
+    const [modalWorkoutName, setModalWorkoutName] = useState<string>(''); // Estado separado para o modal
     const [isAndroidDevice, setIsAndroidDevice] = useState(false);
     const [workoutOptionsState, setWorkoutOptionsState] = useState<WorkoutOption[]>([]);
     const [activeTab, setActiveTab] = useState<string>('treinos');
+    const { saveWorkout } = useWorkoutApi();
 
     const dayOptions = [
         { value: "Domingo", label: "Domingo" },
@@ -148,7 +150,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         ));
     };
 
-    const handleWorkoutChange = (dayId: number, workoutIndex: number, field: keyof Workout, value: string | number) => {
+    const handleWorkoutChange = (dayId: number, workoutIndex: number, field: keyof Workout, value: string | number | string[]) => {
         setDays(days.map(day =>
             day.id === dayId ? {
                 ...day,
@@ -159,7 +161,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         ));
     };
 
-    const handleOptionWorkoutChange = (optionId: number, workoutIndex: number, field: keyof Workout, value: string | number) => {
+    const handleOptionWorkoutChange = (optionId: number, workoutIndex: number, field: keyof Workout, value: string | number | string[]) => {
         setWorkoutOptionsState(workoutOptionsState.map(option =>
             option.id === optionId ? {
                 ...option,
@@ -204,31 +206,30 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         saveDocAndroid(doc);
     };
 
-    const handleSave = () => {
-        if (!workoutName) {
+    const handleSave = async () => {
+        if (!modalWorkoutName.trim()) {
             alert("Por favor, insira um nome para a ficha.");
             return;
         }
 
-        const savedWorkouts = JSON.parse(localStorage.getItem('workouts') || '{}');
+        try {
+            const success = await saveWorkout(modalWorkoutName.trim(), {
+                days,
+                workoutOptionals: workoutOptionsState
+            });
 
-        if (savedWorkouts[workoutName]) {
-            const confirmOverwrite = window.confirm(
-                "Já existe uma ficha com esse nome. Deseja sobrescrevê-la?"
-            );
-            if (!confirmOverwrite) {
-                return;
+            if (success) {
+                alert("Ficha salva com sucesso!");
+                setWorkoutName(modalWorkoutName.trim()); // Atualiza o nome principal apenas após salvar
+                setShowModal(false);
+                setModalWorkoutName(''); // Limpa o modal
+            } else {
+                alert("Erro ao salvar a ficha. Tente novamente.");
             }
+        } catch (error) {
+            console.error('Erro ao salvar treino:', error);
+            alert("Erro ao salvar a ficha. Tente novamente.");
         }
-
-        savedWorkouts[workoutName] = {
-            days,
-            workoutOptionals: workoutOptionsState
-        };
-
-        localStorage.setItem('workouts', JSON.stringify(savedWorkouts));
-        alert("Ficha salva com sucesso!");
-        setShowModal(false);
     };
 
     const openSaveModal = () => {
@@ -236,10 +237,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
             alert("Por favor, adicione pelo menos um dia.");
             return;
         }
+        setModalWorkoutName(workoutName || ''); // Inicializa com o nome atual se existir
         setShowModal(true);
     };
 
-    const closeSaveModal = () => setShowModal(false);
+    const closeSaveModal = () => {
+        setShowModal(false);
+        setModalWorkoutName(''); // Limpa o nome do modal ao fechar
+    };
 
     const renderPdfPreview = useCallback(() => {
         if (activeTab !== 'preview' || days.length === 0) return;
@@ -247,11 +252,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         const doc = buildPDF(days, workoutOptionsState);
         const pdfPreviewContainer = document.getElementById('pdf-preview');
         const pageHeight = window.innerHeight - 100;
-        // adiciona nome ao pdf
-        doc.setProperties({
-            title: `Treino ${workoutName}`,
-            subject: `Treino ${workoutName}`,
-        });
+        // adiciona nome ao pdf apenas se existir
+        if (workoutName) {
+            doc.setProperties({
+                title: `Treino ${workoutName}`,
+                subject: `Treino ${workoutName}`,
+            });
+        }
 
         if (pdfPreviewContainer) {
             pdfPreviewContainer.innerHTML = ''; // Limpa o conteúdo anterior
@@ -263,7 +270,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
 
             pdfPreviewContainer.appendChild(iframe);
         }
-    }, [activeTab, days, workoutOptionsState, workoutName]);
+    }, [activeTab, days, workoutOptionsState]);
 
     useEffect(() => {
         if (activeTab === 'preview') {
@@ -464,8 +471,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
                 <Modal.Body>
                     <FormControl
                         placeholder="Digite o nome da ficha"
-                        value={workoutName}
-                        onChange={(e) => setWorkoutName(e.target.value)}
+                        value={modalWorkoutName}
+                        onChange={(e) => setModalWorkoutName(e.target.value)}
                     />
                 </Modal.Body>
                 <Modal.Footer>
