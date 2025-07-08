@@ -184,6 +184,7 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
     linePosition += 10;
     doc.setFontSize(20);
     doc.setFont(fontDefault, "bold");
+
     doc.text('Treino', pageWidth / 2, linePosition, {
         align: 'center',
     });
@@ -193,7 +194,7 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
     doc.setFont(fontDefault, "normal");
 
     days.forEach((day) => {
-        const nextHeight = (day.workouts.length * 10) + 20;
+        const nextHeight = (day.workouts.length * 10) + 40;
         if (linePosition + nextHeight > (pageHeight - 10)) {
             linePosition = 30;
             doc.addPage();
@@ -241,7 +242,7 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
             }
         });
 
-        linePosition += nextHeight;
+        linePosition += nextHeight + 10;
     });
     return doc;
 }
