@@ -203,7 +203,7 @@ export function buildPDF(days: Day[], workoutOptions: WorkoutOption[]) {
         }
 
 
-        doc.text(`${day.name}`, positionLeft, linePosition);
+        doc.text(`${day.name} - ${day.label}`, positionLeft, linePosition);
         linePosition += 10;
         const tableData = day.workouts.map(workout => {
             const serieText = `${workout.serie}x`;
