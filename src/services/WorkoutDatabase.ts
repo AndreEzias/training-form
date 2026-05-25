@@ -1,111 +1,102 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+import mysql, { Pool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { Day, WorkoutOption } from '../types/workout.types';
+import { getMysqlPoolConfig } from './dbConfig';
 
 interface WorkoutData {
     days: Day[];
     workoutOptionals?: WorkoutOption[];
 }
 
+interface WorkoutRow extends RowDataPacket {
+    name: string;
+    data: string;
+}
+
 class WorkoutDatabase {
-    private db: Database.Database | null = null;
+    private pool: Pool | null = null;
     private initialized = false;
+    private readonly initPromise: Promise<void>;
 
     constructor() {
-        this.initDatabase();
+        this.initPromise = this.initDatabase();
     }
 
-    private initDatabase() {
+    private async initDatabase() {
         try {
-            // Cria o banco na pasta do projeto
-            const dbPath = path.join(process.cwd(), 'workouts.db');
-            console.log('Inicializando banco de dados em:', dbPath);
-            
-            this.db = new Database(dbPath);
-            
-            // Configurações de performance e confiabilidade
-            this.db.pragma('journal_mode = WAL');
-            this.db.pragma('synchronous = NORMAL');
-            this.db.pragma('foreign_keys = ON');
-            
-            this.createTables();
+            const config = getMysqlPoolConfig();
+            if (!config) {
+                console.error(
+                    'MySQL: variáveis de ambiente não configuradas (MYSQL_URL ou MYSQLHOST/MYSQLUSER/...)'
+                );
+                return;
+            }
+
+            this.pool = mysql.createPool(config);
+            await this.pool.query('SELECT 1');
+            await this.createTables();
             this.initialized = true;
-            console.log('Banco de dados inicializado com sucesso');
+            console.log('Banco MySQL inicializado com sucesso');
         } catch (error) {
-            console.error('Erro ao inicializar banco de dados:', error);
+            console.error('Erro ao inicializar banco MySQL:', error);
             this.initialized = false;
-            // Não lança erro para permitir fallback
         }
     }
 
-    private createTables() {
-        if (!this.db) {
-            throw new Error('Banco de dados não inicializado');
-        }
+    private async createTables() {
+        const pool = await this.ensureConnection();
 
-        try {
-            // Criar tabela de treinos
-            this.db.exec(`
-                CREATE TABLE IF NOT EXISTS workouts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT UNIQUE NOT NULL,
-                    data TEXT NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS workouts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                data TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uk_workout_name (name)
+            )
+        `);
 
-            // Trigger para atualizar updated_at
-            this.db.exec(`
-                CREATE TRIGGER IF NOT EXISTS update_workout_timestamp 
-                AFTER UPDATE ON workouts
-                BEGIN
-                    UPDATE workouts SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-                END
-            `);
-
-            // Criar índice para busca por nome
-            this.db.exec(`
-                CREATE INDEX IF NOT EXISTS idx_workout_name ON workouts(name);
-            `);
-
-        } catch (error) {
-            console.error('Erro ao criar tabelas:', error);
-            throw error;
-        }
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_workout_name ON workouts (name)
+        `).catch(() => {
+            /* índice pode já existir em versões antigas do MySQL */
+        });
     }
 
-    private ensureConnection(): Database.Database {
-        if (!this.initialized || !this.db) {
+    private async ensureConnection(): Promise<Pool> {
+        await this.initPromise;
+        if (!this.initialized || !this.pool) {
             throw new Error('Banco de dados não está disponível');
         }
-        return this.db;
+        return this.pool;
     }
 
-    // Salvar treino
-    saveWorkout(name: string, workoutData: WorkoutData): boolean {
+    async saveWorkout(name: string, workoutData: WorkoutData): Promise<boolean> {
         try {
-            const db = this.ensureConnection();
-            const stmt = db.prepare(`
-                INSERT OR REPLACE INTO workouts (name, data) 
-                VALUES (?, ?)
-            `);
-            
-            const result = stmt.run(name, JSON.stringify(workoutData));
-            return result.changes > 0;
+            const pool = await this.ensureConnection();
+            const [result] = await pool.execute<ResultSetHeader>(
+                `INSERT INTO workouts (name, data)
+                 VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE
+                    data = VALUES(data),
+                    updated_at = CURRENT_TIMESTAMP`,
+                [name, JSON.stringify(workoutData)]
+            );
+            return result.affectedRows > 0;
         } catch (error) {
             console.error('Erro ao salvar treino:', error);
             return false;
         }
     }
 
-    // Buscar treino por nome
-    getWorkout(name: string): WorkoutData | null {
+    async getWorkout(name: string): Promise<WorkoutData | null> {
         try {
-            const db = this.ensureConnection();
-            const stmt = db.prepare('SELECT data FROM workouts WHERE name = ?');
-            const row = stmt.get(name) as { data: string } | undefined;
-            
+            const pool = await this.ensureConnection();
+            const [rows] = await pool.execute<WorkoutRow[]>(
+                'SELECT data FROM workouts WHERE name = ? LIMIT 1',
+                [name]
+            );
+            const row = rows[0];
             if (row) {
                 return JSON.parse(row.data);
             }
@@ -116,22 +107,21 @@ class WorkoutDatabase {
         }
     }
 
-    // Buscar todos os treinos
-    getAllWorkouts(): { [key: string]: WorkoutData } {
+    async getAllWorkouts(): Promise<{ [key: string]: WorkoutData }> {
         try {
-            const db = this.ensureConnection();
-            const stmt = db.prepare('SELECT name, data FROM workouts ORDER BY updated_at DESC');
-            const rows = stmt.all() as { name: string; data: string }[];
-            
+            const pool = await this.ensureConnection();
+            const [rows] = await pool.execute<WorkoutRow[]>(
+                'SELECT name, data FROM workouts ORDER BY updated_at DESC'
+            );
+
             const workouts: { [key: string]: WorkoutData } = {};
-            rows.forEach(row => {
+            for (const row of rows) {
                 try {
                     workouts[row.name] = JSON.parse(row.data);
                 } catch (parseError) {
                     console.error(`Erro ao fazer parse do treino ${row.name}:`, parseError);
                 }
-            });
-            
+            }
             return workouts;
         } catch (error) {
             console.error('Erro ao buscar treinos:', error);
@@ -139,65 +129,71 @@ class WorkoutDatabase {
         }
     }
 
-    // Deletar treino
-    deleteWorkout(name: string): boolean {
+    async deleteWorkout(name: string): Promise<boolean> {
         try {
-            const db = this.ensureConnection();
-            const stmt = db.prepare('DELETE FROM workouts WHERE name = ?');
-            const result = stmt.run(name);
-            return result.changes > 0;
+            const pool = await this.ensureConnection();
+            const [result] = await pool.execute<ResultSetHeader>(
+                'DELETE FROM workouts WHERE name = ?',
+                [name]
+            );
+            return result.affectedRows > 0;
         } catch (error) {
             console.error('Erro ao deletar treino:', error);
             return false;
         }
     }
 
-    // Verificar se treino existe
-    workoutExists(name: string): boolean {
+    async workoutExists(name: string): Promise<boolean> {
         try {
-            const db = this.ensureConnection();
-            const stmt = db.prepare('SELECT 1 FROM workouts WHERE name = ? LIMIT 1');
-            const row = stmt.get(name);
-            return !!row;
+            const pool = await this.ensureConnection();
+            const [rows] = await pool.execute<RowDataPacket[]>(
+                'SELECT 1 FROM workouts WHERE name = ? LIMIT 1',
+                [name]
+            );
+            return rows.length > 0;
         } catch (error) {
             console.error('Erro ao verificar treino:', error);
             return false;
         }
     }
 
-    // Listar nomes dos treinos
-    getWorkoutNames(): string[] {
+    async getWorkoutNames(): Promise<string[]> {
         try {
-            const db = this.ensureConnection();
-            const stmt = db.prepare('SELECT name FROM workouts ORDER BY updated_at DESC');
-            const rows = stmt.all() as { name: string }[];
-            return rows.map(row => row.name);
+            const pool = await this.ensureConnection();
+            const [rows] = await pool.execute<RowDataPacket[]>(
+                'SELECT name FROM workouts ORDER BY updated_at DESC'
+            );
+            return rows.map((row) => row.name as string);
         } catch (error) {
             console.error('Erro ao listar treinos:', error);
             return [];
         }
     }
 
-    // Verificar se o banco está funcionando
-    isAvailable(): boolean {
-        return this.initialized && this.db !== null;
+    async isAvailable(): Promise<boolean> {
+        try {
+            const pool = await this.ensureConnection();
+            await pool.query('SELECT 1');
+            return true;
+        } catch {
+            return false;
+        }
     }
 
-    // Fechar conexão
-    close() {
-        if (this.db) {
+    async close() {
+        if (this.pool) {
             try {
-                this.db.close();
+                await this.pool.end();
                 this.initialized = false;
-                console.log('Conexão com banco fechada');
+                this.pool = null;
+                console.log('Conexão MySQL encerrada');
             } catch (error) {
-                console.error('Erro ao fechar banco:', error);
+                console.error('Erro ao fechar pool MySQL:', error);
             }
         }
     }
 }
 
-// Singleton para garantir uma única instância
 let dbInstance: WorkoutDatabase | null = null;
 
 export function getWorkoutDatabase(): WorkoutDatabase {

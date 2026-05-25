@@ -89,7 +89,7 @@ const SystemDiagnostic: React.FC = () => {
                                     </Badge>
                                 </div>
                                 <div className="d-flex justify-content-between mb-2">
-                                    <span>Banco SQLite:</span>
+                                    <span>Banco MySQL:</span>
                                     <Badge bg={getStatusVariant(status.database)}>
                                         {getStatusText(status.database)}
                                     </Badge>
@@ -125,8 +125,8 @@ const SystemDiagnostic: React.FC = () => {
                                 {status.api && !status.database && (
                                     <div className="mt-2">
                                         <small>
-                                            A API está funcionando mas o banco SQLite não está disponível.
-                                            Verifique a instalação do better-sqlite3.
+                                            A API está funcionando mas o MySQL não está disponível.
+                                            Verifique MYSQL_URL ou as variáveis MYSQLHOST/MYSQLUSER no Railway.
                                         </small>
                                     </div>
                                 )}
@@ -134,7 +134,7 @@ const SystemDiagnostic: React.FC = () => {
                                 {status.api && status.database && (
                                     <div className="mt-2">
                                         <small>
-                                            ✅ Sistema funcionando perfeitamente! Dados estão sendo salvos no SQLite.
+                                            ✅ Sistema funcionando perfeitamente! Dados estão sendo salvos no MySQL.
                                         </small>
                                     </div>
                                 )}
@@ -143,7 +143,7 @@ const SystemDiagnostic: React.FC = () => {
                             {status.localStorageData > 0 && status.api && status.database && (
                                 <Alert variant="info">
                                     <strong>Migração Disponível:</strong> Há {status.localStorageData} treino(s) 
-                                    no localStorage que podem ser migrados para SQLite.
+                                    no localStorage que podem ser migrados para o MySQL.
                                 </Alert>
                             )}
                         </div>
