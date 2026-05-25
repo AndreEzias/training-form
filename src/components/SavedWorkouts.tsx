@@ -2,21 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Button, Container, ListGroup, ListGroupItem, Alert, Spinner } from 'react-bootstrap';
 import { useRouter } from 'next/router';
 import { useWorkoutApi } from '../hooks/useWorkoutApi';
-
-interface Day {
-    id: number;
-    name: string;
-    workouts: Workout[];
-}
-
-interface Workout {
-    aparelho: string;
-    serie: number;
-    repeticao: number;
-    repeticaoExtra: number;
-    pausa: number;
-    assistir: string;
-}
+import { Day } from '../types/workout.types';
 
 const SavedWorkoutsPage: React.FC = () => {
     const [workoutList, setWorkoutList] = useState<{ [key: string]: Day[] }>({});
