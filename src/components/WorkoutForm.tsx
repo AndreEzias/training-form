@@ -3,6 +3,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import { Button, Container, FormControl, Row, Modal, Tab, Tabs, ButtonGroup } from "react-bootstrap";
 import { Col } from "react-bootstrap";
 import { buildPDF, saveDocAndroid, saveWeb } from '@/services/GeneratePDF';
+import { mountPdfPreview, showPdfPreviewError } from '@/services/pdfPreview';
 import { Day, Workout, WorkoutOption } from '@/types/workout.types';
 import Select from 'react-select';
 import WorkoutField from './WorkoutField';
@@ -184,15 +185,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         setWorkoutOptionsState(newOptions);
     };
 
-    const printPDF = () => {
+    const printPDF = async () => {
         if (days.length === 0) {
             alert("Por favor, adicione pelo menos um dia.");
             return;
         }
 
-        const doc = buildPDF(days, workoutOptionsState);
-
-        saveWeb(doc);
+        try {
+            const doc = await buildPDF(days, workoutOptionsState);
+            saveWeb(doc);
+        } catch (error) {
+            console.error('Erro ao gerar PDF:', error);
+            alert('Não foi possível gerar o PDF. Tente novamente.');
+        }
     };
 
     const downloadPDF = async () => {
@@ -201,9 +206,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
             return;
         }
 
-        const doc = buildPDF(days, workoutOptionsState);
-
-        saveDocAndroid(doc);
+        try {
+            const doc = await buildPDF(days, workoutOptionsState);
+            await saveDocAndroid(doc);
+        } catch (error) {
+            console.error('Erro ao gerar PDF:', error);
+            alert('Não foi possível gerar o PDF. Tente novamente.');
+        }
     };
 
     const handleSave = async () => {
@@ -246,31 +255,35 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ workoutData, workoutNameProp 
         setModalWorkoutName(''); // Limpa o nome do modal ao fechar
     };
 
-    const renderPdfPreview = useCallback(() => {
+    const renderPdfPreview = useCallback(async () => {
         if (activeTab !== 'preview' || days.length === 0) return;
 
-        const doc = buildPDF(days, workoutOptionsState);
-        const pdfPreviewContainer = document.getElementById('pdf-preview');
-        const pageHeight = window.innerHeight - 100;
-        // adiciona nome ao pdf apenas se existir
-        if (workoutName) {
-            doc.setProperties({
-                title: `Treino ${workoutName}`,
-                subject: `Treino ${workoutName}`,
-            });
-        }
+        try {
+            const doc = await buildPDF(days, workoutOptionsState);
+            const pdfPreviewContainer = document.getElementById('pdf-preview');
+            const pageHeight = window.innerHeight - 100;
 
-        if (pdfPreviewContainer) {
-            pdfPreviewContainer.innerHTML = ''; // Limpa o conteúdo anterior
-            const pdfDataUri = doc.output('datauristring');
-            const iframe = document.createElement('iframe');
-            iframe.src = pdfDataUri;
-            iframe.width = '100%';
-            iframe.height = `${pageHeight}px`; // Ajuste a altura conforme necessário
+            if (workoutName) {
+                doc.setProperties({
+                    title: `Treino ${workoutName}`,
+                    subject: `Treino ${workoutName}`,
+                });
+            }
 
-            pdfPreviewContainer.appendChild(iframe);
+            if (pdfPreviewContainer) {
+                mountPdfPreview(doc, pdfPreviewContainer, pageHeight);
+            }
+        } catch (error) {
+            console.error('Erro ao gerar preview do PDF:', error);
+            const pdfPreviewContainer = document.getElementById('pdf-preview');
+            if (pdfPreviewContainer) {
+                showPdfPreviewError(
+                    pdfPreviewContainer,
+                    'Não foi possível gerar o preview do PDF. Tente novamente.'
+                );
+            }
         }
-    }, [activeTab, days, workoutOptionsState]);
+    }, [activeTab, days, workoutOptionsState, workoutName]);
 
     useEffect(() => {
         if (activeTab === 'preview') {
