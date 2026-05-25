@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { Col, Container, Row } from 'react-bootstrap';
 import Header from '@/components/Header';
 import { buildPDF } from '@/services/GeneratePDF';
+import { mountPdfPreview, showPdfPreviewError } from '@/services/pdfPreview';
 import { Day, WorkoutOption } from '@/types/workout.types';
 import { useWorkoutApi } from '../../hooks/useWorkoutApi';
 
@@ -28,25 +29,29 @@ const PdfPreviewPage: React.FC = () => {
         }
     }, [name, getWorkout]);
 
-    const renderPdfPreview = useCallback((days: Day[], workoutOptionals: WorkoutOption[]) => {
-        const doc = buildPDF(days, workoutOptionals);
-        const pdfPreviewContainer = document.getElementById('pdf-preview');
-        const pageHeight = window.innerHeight - 100;
-        // adiciona nome ao pdf
-        doc.setProperties({
-            title: `Treino ${name}`,
-            subject: `Treino ${name}`,
-        });
-        
-        if (pdfPreviewContainer) {
-            pdfPreviewContainer.innerHTML = ''; // Limpa o conteúdo anterior
-            const pdfDataUri = doc.output('datauristring');
-            const iframe = document.createElement('iframe');
-            iframe.src = pdfDataUri;
-            iframe.width = '100%';
-            iframe.height = `${pageHeight}px`; // Ajuste a altura conforme necessário
-           
-            pdfPreviewContainer.appendChild(iframe);
+    const renderPdfPreview = useCallback(async (days: Day[], workoutOptionals: WorkoutOption[]) => {
+        try {
+            const doc = await buildPDF(days, workoutOptionals);
+            const pdfPreviewContainer = document.getElementById('pdf-preview');
+            const pageHeight = window.innerHeight - 100;
+
+            doc.setProperties({
+                title: `Treino ${name}`,
+                subject: `Treino ${name}`,
+            });
+
+            if (pdfPreviewContainer) {
+                mountPdfPreview(doc, pdfPreviewContainer, pageHeight);
+            }
+        } catch (error) {
+            console.error('Erro ao gerar preview do PDF:', error);
+            const pdfPreviewContainer = document.getElementById('pdf-preview');
+            if (pdfPreviewContainer) {
+                showPdfPreviewError(
+                    pdfPreviewContainer,
+                    'Não foi possível gerar o preview do PDF. Tente novamente.'
+                );
+            }
         }
     }, [name]);
 
