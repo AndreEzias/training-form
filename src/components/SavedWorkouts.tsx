@@ -6,18 +6,38 @@ import { Day } from '../types/workout.types';
 
 const SavedWorkoutsPage: React.FC = () => {
     const [workoutList, setWorkoutList] = useState<{ [key: string]: Day[] }>({});
+    const [pageLoading, setPageLoading] = useState(true);
     const router = useRouter();
-    const { loading, error, getAllWorkouts, deleteWorkout } = useWorkoutApi();
+    const { loading: actionLoading, error, getAllWorkouts, deleteWorkout } = useWorkoutApi();
 
-    // Carrega os treinos salvos do SQLite
     const loadWorkouts = useCallback(async () => {
-        const savedWorkouts = await getAllWorkouts();
-        // Convertemos os dados para o formato esperado pelo componente
-        const formattedWorkouts: { [key: string]: Day[] } = {};
-        Object.keys(savedWorkouts).forEach(name => {
-            formattedWorkouts[name] = savedWorkouts[name].days;
-        });
-        setWorkoutList(formattedWorkouts);
+        setPageLoading(true);
+        try {
+            let savedWorkouts = await getAllWorkouts();
+
+            // Tenta importar workouts.db → MySQL se a lista estiver vazia
+            if (Object.keys(savedWorkouts).length === 0) {
+                try {
+                    const migrateRes = await fetch('/api/migrate/sqlite', { method: 'POST' });
+                    if (migrateRes.ok) {
+                        const body = await migrateRes.json();
+                        if (body.imported > 0) {
+                            savedWorkouts = await getAllWorkouts();
+                        }
+                    }
+                } catch {
+                    /* migração opcional */
+                }
+            }
+
+            const formattedWorkouts: { [key: string]: Day[] } = {};
+            Object.keys(savedWorkouts).forEach((name) => {
+                formattedWorkouts[name] = savedWorkouts[name].days;
+            });
+            setWorkoutList(formattedWorkouts);
+        } finally {
+            setPageLoading(false);
+        }
     }, [getAllWorkouts]);
 
     useEffect(() => {
@@ -53,7 +73,7 @@ const SavedWorkoutsPage: React.FC = () => {
         <Container className="mt-4">
             <h1 className="mb-4">Treinos Salvos</h1>
             
-            {loading && (
+            {pageLoading && (
                 <div className="text-center mb-4">
                     <Spinner animation="border" role="status">
                         <span className="visually-hidden">Carregando...</span>
@@ -67,7 +87,7 @@ const SavedWorkoutsPage: React.FC = () => {
                 </Alert>
             )}
             
-            {!loading && Object.keys(workoutList).length === 0 ? (
+            {!pageLoading && Object.keys(workoutList).length === 0 ? (
                 <p>Nenhuma ficha de treino foi salva ainda.</p>
             ) : (
                 <ListGroup>
@@ -82,7 +102,7 @@ const SavedWorkoutsPage: React.FC = () => {
                                     variant="primary"
                                     className="me-2"
                                     onClick={() => handleViewWorkout(workoutName)}
-                                    disabled={loading}
+                                    disabled={actionLoading}
                                 >
                                     Editar
                                 </Button>
@@ -90,14 +110,14 @@ const SavedWorkoutsPage: React.FC = () => {
                                     variant="secondary"
                                     className="me-2"
                                     onClick={() => handlePdfViewWorkout(workoutName)}
-                                    disabled={loading}
+                                    disabled={actionLoading}
                                 >
                                     Visualizar PDF
                                 </Button>
                                 <Button
                                     variant="danger"
                                     onClick={() => handleDeleteWorkout(workoutName)}
-                                    disabled={loading}
+                                    disabled={actionLoading}
                                 >
                                     Excluir
                                 </Button>

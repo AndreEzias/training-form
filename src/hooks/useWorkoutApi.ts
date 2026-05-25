@@ -10,12 +10,29 @@ interface UseWorkoutApiReturn {
     deleteWorkout: (name: string) => Promise<boolean>;
 }
 
+const API_TIMEOUT_MS = 12000;
+
+async function fetchWithTimeout(
+    url: string,
+    options: RequestInit = {},
+    timeoutMs = API_TIMEOUT_MS
+): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
 // Fallback para localStorage se a API falhar
 const localStorageFallback = {
     saveWorkout: (name: string, data: WorkoutData): boolean => {
         try {
             if (typeof window === 'undefined') return false;
-            
+
             const workouts = JSON.parse(localStorage.getItem('workouts') || '{}');
             workouts[name] = data;
             localStorage.setItem('workouts', JSON.stringify(workouts));
@@ -28,7 +45,7 @@ const localStorageFallback = {
     getWorkout: (name: string): WorkoutData | null => {
         try {
             if (typeof window === 'undefined') return null;
-            
+
             const workouts = JSON.parse(localStorage.getItem('workouts') || '{}');
             return workouts[name] || null;
         } catch {
@@ -39,7 +56,7 @@ const localStorageFallback = {
     getAllWorkouts: (): { [key: string]: WorkoutData } => {
         try {
             if (typeof window === 'undefined') return {};
-            
+
             return JSON.parse(localStorage.getItem('workouts') || '{}');
         } catch {
             return {};
@@ -49,7 +66,7 @@ const localStorageFallback = {
     deleteWorkout: (name: string): boolean => {
         try {
             if (typeof window === 'undefined') return false;
-            
+
             const workouts = JSON.parse(localStorage.getItem('workouts') || '{}');
             delete workouts[name];
             localStorage.setItem('workouts', JSON.stringify(workouts));
@@ -57,7 +74,7 @@ const localStorageFallback = {
         } catch {
             return false;
         }
-    }
+    },
 };
 
 export function useWorkoutApi(): UseWorkoutApiReturn {
@@ -67,7 +84,7 @@ export function useWorkoutApi(): UseWorkoutApiReturn {
     const handleRequest = useCallback(async <T>(request: () => Promise<T>): Promise<T | null> => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const result = await request();
             return result;
@@ -84,7 +101,7 @@ export function useWorkoutApi(): UseWorkoutApiReturn {
     const saveWorkout = useCallback(async (name: string, data: WorkoutData): Promise<boolean> => {
         const result = await handleRequest(async () => {
             try {
-                const response = await fetch('/api/workouts', {
+                const response = await fetchWithTimeout('/api/workouts', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -108,17 +125,11 @@ export function useWorkoutApi(): UseWorkoutApiReturn {
 
     const getWorkout = useCallback(async (name: string): Promise<WorkoutData | null> => {
         return await handleRequest(async () => {
-            console.log('useWorkoutApi: Buscando treino:', name);
-            
             try {
                 const url = `/api/workouts/${encodeURIComponent(name)}`;
-                console.log('useWorkoutApi: URL da API:', url);
-                
-                const response = await fetch(url);
-                console.log('useWorkoutApi: Status da resposta:', response.status);
-                
+                const response = await fetchWithTimeout(url);
+
                 if (response.status === 404) {
-                    console.log('useWorkoutApi: Treino não encontrado na API');
                     return null;
                 }
 
@@ -126,14 +137,10 @@ export function useWorkoutApi(): UseWorkoutApiReturn {
                     throw new Error(`API retornou status ${response.status}`);
                 }
 
-                const data = await response.json();
-                console.log('useWorkoutApi: Dados recebidos da API:', data);
-                return data;
+                return await response.json();
             } catch (apiError) {
-                console.warn('useWorkoutApi: API falhou, tentando localStorage:', apiError);
-                const localData = localStorageFallback.getWorkout(name);
-                console.log('useWorkoutApi: Dados do localStorage:', localData);
-                return localData;
+                console.warn('API falhou, tentando localStorage:', apiError);
+                return localStorageFallback.getWorkout(name);
             }
         });
     }, [handleRequest]);
@@ -141,13 +148,24 @@ export function useWorkoutApi(): UseWorkoutApiReturn {
     const getAllWorkouts = useCallback(async (): Promise<{ [key: string]: WorkoutData }> => {
         const result = await handleRequest(async () => {
             try {
-                const response = await fetch('/api/workouts');
+                const response = await fetchWithTimeout('/api/workouts');
 
                 if (!response.ok) {
                     throw new Error('API não disponível');
                 }
 
-                return await response.json();
+                const apiWorkouts = await response.json();
+                const localWorkouts = localStorageFallback.getAllWorkouts();
+
+                // MySQL vazio mas ainda há treinos no navegador (período antes da migração)
+                if (
+                    Object.keys(apiWorkouts).length === 0 &&
+                    Object.keys(localWorkouts).length > 0
+                ) {
+                    return localWorkouts;
+                }
+
+                return { ...localWorkouts, ...apiWorkouts };
             } catch (apiError) {
                 console.warn('API falhou, usando localStorage:', apiError);
                 return localStorageFallback.getAllWorkouts();
@@ -160,9 +178,10 @@ export function useWorkoutApi(): UseWorkoutApiReturn {
     const deleteWorkout = useCallback(async (name: string): Promise<boolean> => {
         const result = await handleRequest(async () => {
             try {
-                const response = await fetch(`/api/workouts/${encodeURIComponent(name)}`, {
-                    method: 'DELETE',
-                });
+                const response = await fetchWithTimeout(
+                    `/api/workouts/${encodeURIComponent(name)}`,
+                    { method: 'DELETE' }
+                );
 
                 if (!response.ok) {
                     throw new Error('API não disponível');

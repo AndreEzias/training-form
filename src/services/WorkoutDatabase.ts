@@ -33,7 +33,7 @@ class WorkoutDatabase {
 
             this.pool = mysql.createPool(config);
             await this.pool.query('SELECT 1');
-            await this.createTables();
+            await this.createTables(this.pool);
             this.initialized = true;
             console.log('Banco MySQL inicializado com sucesso');
         } catch (error) {
@@ -42,9 +42,7 @@ class WorkoutDatabase {
         }
     }
 
-    private async createTables() {
-        const pool = await this.ensureConnection();
-
+    private async createTables(pool: Pool) {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS workouts (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -170,14 +168,13 @@ class WorkoutDatabase {
         }
     }
 
+    async waitUntilReady(): Promise<boolean> {
+        await this.initPromise;
+        return this.initialized;
+    }
+
     async isAvailable(): Promise<boolean> {
-        try {
-            const pool = await this.ensureConnection();
-            await pool.query('SELECT 1');
-            return true;
-        } catch {
-            return false;
-        }
+        return this.waitUntilReady();
     }
 
     async close() {

@@ -4,7 +4,7 @@ import { getWorkoutDatabase } from '../../services/WorkoutDatabase';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
         const db = getWorkoutDatabase();
-        const databaseOk = await db.isAvailable();
+        const databaseOk = await db.waitUntilReady();
 
         const status = {
             database: databaseOk,

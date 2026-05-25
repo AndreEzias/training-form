@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "migrate:sqlite": "node scripts/migrate-sqlite-to-mysql.mjs",
     "build-apk": "sh scripts/build-apk.sh",
     "build-apk-android": "npm run build-apk && npx cap open android"
   },

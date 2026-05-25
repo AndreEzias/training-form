@@ -96,11 +96,12 @@ const MigrationHelper: React.FC = () => {
         <Container className="mt-4">
             <Card>
                 <Card.Header>
-                    <h4>Migração de Dados localStorage → SQLite</h4>
+                    <h4>Migração de Dados localStorage → MySQL</h4>
                 </Card.Header>
                 <Card.Body>
                     <p>
-                        Esta ferramenta ajuda a migrar seus treinos salvos do localStorage para o novo sistema SQLite.
+                        Migra treinos do localStorage para o MySQL. Treinos do arquivo workouts.db
+                        são importados automaticamente ao abrir Treinos Salvos (se o MySQL estiver vazio).
                     </p>
                     
                     <div className="d-flex gap-2 mb-3">

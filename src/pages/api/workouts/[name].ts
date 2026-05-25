@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
         const db = getWorkoutDatabase();
 
-        if (!(await db.isAvailable())) {
+        if (!(await db.waitUntilReady())) {
             console.log('API: Banco não disponível, retornando erro 503');
             return res.status(503).json({
                 error: 'Banco de dados não está disponível no momento',
